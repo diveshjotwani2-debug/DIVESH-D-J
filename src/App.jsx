@@ -99,7 +99,7 @@ const fallbackProjects = [
 ];
 
 // Camera Controller for smooth cinematically animated Y-axis vertical glides
-function CameraController({ activeZone, resetTrigger, controlsRef, isMobile, scrollPercent }) {
+function CameraController({ activeZone, resetTrigger, controlsRef, isMobile }) {
   const { camera } = useThree();
   const targetPos = useRef(new THREE.Vector3(0, 0, 5.2));
   const targetLookAt = useRef(new THREE.Vector3(0, 0, 0));
@@ -108,48 +108,41 @@ function CameraController({ activeZone, resetTrigger, controlsRef, isMobile, scr
 
   // Configure camera positions, look-at targets, and FOV for each of the 5 Zones
   useEffect(() => {
-    if (isMobile) {
-      // Continuous camera Y vertical glide driven by page scroll position
-      const cameraY = -scrollPercent * 23.0; // Stretches from Y = 0 (Core) to Y = -23 (Portal)
-      targetPos.current.set(0, cameraY, 7.8); // Pull back slightly on Z-axis for vertical portrait framing
-      targetLookAt.current.set(0, cameraY, 0);
-      targetFov.current = 54; // Wider portrait field of view
-      return;
-    }
+    const zOffset = isMobile ? 1.62 : 1.0;  // Pull camera back on mobile portrait to fit landscape elements
+    const fovVal = isMobile ? 64 : 45;      // Wider mobile FOV
 
-    // Desktop Discrete Camera glide configurations
     switch (activeZone) {
       case 'identity':
-        targetPos.current.set(0, 0, 5.2);
+        targetPos.current.set(0, 0, 5.2 * zOffset);
         targetLookAt.current.set(0, 0, 0);
-        targetFov.current = 45;
+        targetFov.current = fovVal;
         break;
       case 'experience':
-        targetPos.current.set(0, 2.8, 7.2);
+        targetPos.current.set(0, isMobile ? 3.2 : 2.8, 7.2 * zOffset);
         targetLookAt.current.set(0, 0, 0);
-        targetFov.current = 45;
+        targetFov.current = fovVal;
         break;
       case 'projects':
-        targetPos.current.set(0, -6, 5.5);
+        targetPos.current.set(0, -6, 5.5 * zOffset);
         targetLookAt.current.set(0, -6, 0);
-        targetFov.current = 45;
+        targetFov.current = fovVal;
         break;
       case 'neev':
-        targetPos.current.set(0, -12.5, 6.8);
+        targetPos.current.set(0, -12.5, 6.8 * zOffset);
         targetLookAt.current.set(0, -12.5, 0);
-        targetFov.current = 45;
+        targetFov.current = fovVal;
         break;
       case 'portal':
-        targetPos.current.set(0, -20, 7.8);
+        targetPos.current.set(0, -20, 7.8 * zOffset);
         targetLookAt.current.set(0, -20, 0);
-        targetFov.current = 62; // Widened FOV for cinematic wide lens effect
+        targetFov.current = isMobile ? 70 : 62; // Extra wide view for mobile portal dashboard
         break;
       default:
-        targetPos.current.set(0, 0, 5.2);
+        targetPos.current.set(0, 0, 5.2 * zOffset);
         targetLookAt.current.set(0, 0, 0);
-        targetFov.current = 45;
+        targetFov.current = fovVal;
     }
-  }, [activeZone, resetTrigger, isMobile, scrollPercent]);
+  }, [activeZone, resetTrigger, isMobile]);
 
   // Interpolate camera, look-at, and FOV on every frame
   useFrame(() => {
@@ -162,7 +155,7 @@ function CameraController({ activeZone, resetTrigger, controlsRef, isMobile, scr
       camera.updateProjectionMatrix();
     }
 
-    if (controlsRef.current && !isMobile) {
+    if (controlsRef.current) {
       controlsRef.current.target.lerp(targetLookAt.current, 0.05);
       controlsRef.current.update();
     }
@@ -188,9 +181,8 @@ export default function App() {
   const [projects, setProjects] = useState([]);
   const [loadingDb, setLoadingDb] = useState(true);
 
-  // Responsive & Preloader States
-  const [isMobile, setIsMobile] = useState(false);
-  const [scrollPercent, setScrollPercent] = useState(0);
+  // Viewport & Preloader States
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
   const [isBooted, setIsBooted] = useState(false);
 
   // 1. Listen for viewport size updates (Mobile detection)
@@ -203,67 +195,29 @@ export default function App() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // 2. Mobile scroll listener: maps document scroll position directly to camera heights
+  // 2. Unify scroll settings: Disable document scrolling on all platforms to lock single-screen interactive HUD
   useEffect(() => {
     const rootDiv = document.getElementById('root');
-
-    if (!isMobile) {
-      document.documentElement.style.overflowY = 'hidden';
-      document.documentElement.style.height = '100%';
-      document.body.style.overflowY = 'hidden';
-      document.body.style.height = '100%';
-      if (rootDiv) {
-        rootDiv.style.overflowY = 'hidden';
-        rootDiv.style.height = '100%';
-      }
-      return;
-    }
-
-    // Fully unlock mobile browser scroll path
-    document.documentElement.style.overflowY = 'scroll';
-    document.documentElement.style.height = 'auto';
-    document.body.style.overflowY = 'scroll';
-    document.body.style.height = '500vh'; // 5 pages of scrollable depth
+    document.documentElement.style.overflow = 'hidden';
+    document.documentElement.style.height = '100%';
+    document.body.style.overflow = 'hidden';
+    document.body.style.height = '100%';
     if (rootDiv) {
-      rootDiv.style.overflowY = 'visible';
-      rootDiv.style.height = 'auto';
+      rootDiv.style.overflow = 'hidden';
+      rootDiv.style.height = '100%';
     }
-
-    const handleScroll = () => {
-      const scrollTop = window.scrollY;
-      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-      const percent = docHeight > 0 ? scrollTop / docHeight : 0;
-      setScrollPercent(percent);
-
-      // Map scroll progress percentages to discrete active HUD zones
-      if (percent < 0.15) {
-        setActiveZone('identity');
-      } else if (percent >= 0.15 && percent < 0.40) {
-        setActiveZone('experience');
-      } else if (percent >= 0.40 && percent < 0.65) {
-        setActiveZone('projects');
-      } else if (percent >= 0.65 && percent < 0.88) {
-        setActiveZone('neev');
-      } else {
-        setActiveZone('portal');
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
 
     return () => {
-      window.removeEventListener('scroll', handleScroll);
-      document.documentElement.style.overflowY = '';
+      document.documentElement.style.overflow = '';
       document.documentElement.style.height = '';
-      document.body.style.overflowY = '';
+      document.body.style.overflow = '';
       document.body.style.height = '';
       if (rootDiv) {
-        rootDiv.style.overflowY = '';
+        rootDiv.style.overflow = '';
         rootDiv.style.height = '';
       }
     };
-  }, [isMobile]);
+  }, []);
 
   // 3. Listen for URL path or hash changes (Lightweight Client-Side Router)
   useEffect(() => {
@@ -412,7 +366,6 @@ export default function App() {
     setActiveNode(null);
     setActiveProject(null);
     setActiveZone('identity');
-    if (isMobile) window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // ================= ROUTER ROUTE CONTROLLER =================
@@ -466,24 +419,22 @@ export default function App() {
         {/* Starfield & Cosmic Dust Particles */}
         <BackgroundParticles />
 
-        {/* Smooth Vertical Camera Controller (supports continuous mobile scroll glides) */}
+        {/* Smooth Vertical Camera Controller (supports camera Z-offset glides on mobile) */}
         <CameraController
           activeZone={activeZone}
           resetTrigger={resetTrigger}
           controlsRef={controlsRef}
           isMobile={isMobile}
-          scrollPercent={scrollPercent}
         />
 
-        {/* Orbit Controls (disabled on mobile to prevent conflicts with scroll mechanics) */}
+        {/* Orbit Controls (Active on mobile/desktop to allow smooth panning around nodes) */}
         <OrbitControls
           ref={controlsRef}
-          enabled={!isMobile}
           enableZoom={true}
           enablePan={false}
           maxPolarAngle={Math.PI / 1.7} 
           minPolarAngle={Math.PI / 3.5}  
-          maxDistance={10}
+          maxDistance={15}
           minDistance={3.5}
         />
 
@@ -496,8 +447,7 @@ export default function App() {
         </group>
 
         {/* ================= ZONE 2: THE ORBITAL TIMELINE (EXPERIENCE) ================= */}
-        {/* Helix Timeline shifts down to Y = -5 on mobile to avoid overlapping the Core avatar */}
-        <group position={isMobile ? [0, -5, 0] : [0, 0, 0]} visible={activeZone === 'identity' || activeZone === 'experience'}>
+        <group position={[0, 0, 0]} visible={activeZone === 'identity' || activeZone === 'experience'}>
           <ExperienceOrbit
             activeNode={activeNode}
             onSelect={handleSelect}
@@ -507,9 +457,8 @@ export default function App() {
         </group>
 
         {/* ================= ZONE 3: THE PROJECT VAULT (GALLERY) ================= */}
-        {/* Monolith layout shifts down to Y = -11 on mobile and renders as a carousel */}
         <Suspense fallback={null}>
-          <group position={isMobile ? [0, -11, 0] : [0, -6, 0]} visible={activeZone === 'projects'}>
+          <group position={[0, -6, 0]} visible={activeZone === 'projects'}>
             <ProjectCards
               activeProject={activeProject}
               onSelectProject={handleSelectProject}

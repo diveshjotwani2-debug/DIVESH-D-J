@@ -262,22 +262,10 @@ export function ExperienceOrbit({ activeNode, onSelect, experiencesData, isMobil
         angleRefs.current[node.id] += delta * currentSpeed;
         const angle = angleRefs.current[node.id];
 
-        let x = Math.cos(angle) * node.radius;
-        let z = Math.sin(angle) * node.radius;
-        let y = 0;
-
-        if (isMobile) {
-          // Tight vertical spiral DNA helix to fit portrait screen dimensions
-          const helixRadius = 1.6;
-          x = Math.cos(angle) * helixRadius;
-          z = Math.sin(angle) * helixRadius;
-
-          const index = nodesData.findIndex(n => n.id === node.id);
-          const verticalSpacing = 1.5;
-          y = (index - (nodesData.length - 1) / 2) * verticalSpacing;
-        }
-
-        ref.position.set(x, y, z);
+        // Position on a flat 2D plane ring (X-Z)
+        const x = Math.cos(angle) * node.radius;
+        const z = Math.sin(angle) * node.radius;
+        ref.position.set(x, 0, z);
 
         // Slow organic rotation of the node itself
         ref.rotation.y = time * 0.3;
@@ -288,30 +276,26 @@ export function ExperienceOrbit({ activeNode, onSelect, experiencesData, isMobil
   return (
     <group>
       
-      {/* 1. Flat Saturn-like Timeline Orbit Ring (Desktop Only) */}
-      {!isMobile && (
-        <>
-          <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
-            <ringGeometry args={[4.74, 4.86, 64]} />
-            <meshBasicMaterial
-              color="#ffffff"
-              transparent={true}
-              opacity={0.06}
-              side={THREE.DoubleSide}
-            />
-          </mesh>
+      {/* 1. Flat Saturn-like Timeline Orbit Ring */}
+      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
+        <ringGeometry args={[4.74, 4.86, 64]} />
+        <meshBasicMaterial
+          color="#ffffff"
+          transparent={true}
+          opacity={0.06}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
 
-          <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
-            <ringGeometry args={[4.79, 4.81, 64]} />
-            <meshBasicMaterial
-              color="#00f0ff"
-              transparent={true}
-              opacity={0.12}
-              side={THREE.DoubleSide}
-            />
-          </mesh>
-        </>
-      )}
+      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
+        <ringGeometry args={[4.79, 4.81, 64]} />
+        <meshBasicMaterial
+          color="#00f0ff"
+          transparent={true}
+          opacity={0.12}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
 
       {/* 2. Interactive Metaphor Nodes */}
       {nodesData.map((node) => {

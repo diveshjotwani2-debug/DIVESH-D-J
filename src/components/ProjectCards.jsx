@@ -154,58 +154,29 @@ export function ProjectCards({ activeProject, onSelectProject, projectsData, isM
     ];
   }, [projectsData]);
 
-  // Synchronize default active project selection on mobile mount
-  useEffect(() => {
-    if (isMobile && !activeProject && projects.length > 0) {
-      onSelectProject(projects[0].id);
-    }
-  }, [isMobile, activeProject, projects, onSelectProject]);
-
   // Animate the cards floating, flipping, and sliding back
   useFrame((state) => {
-    const time = state.clock.getElapsedTime();
-
-    const activeIndex = projects.findIndex(p => p.id === activeProject);
-    const currentActiveIdx = activeIndex === -1 ? 0 : activeIndex;
-
-    projects.forEach((proj, idx) => {
+    projects.forEach((proj) => {
       const ref = cardRefs.current[proj.id];
       if (ref) {
         const isFlipped = flippedCards[proj.id];
         const isHovered = hoveredCard === proj.id;
         
-        let targetPos;
-        let targetRotY = isFlipped ? Math.PI : 0;
-        let targetScale = 1.0;
-
-        if (isMobile) {
-          // Mobile Carousel Math: centering active index, receding & slanting neighbors
-          const offset = idx - currentActiveIdx;
-          
-          if (offset === 0) {
-            targetPos = new THREE.Vector3(0, 0, isHovered ? 0.22 : 0);
-            targetRotY = isFlipped ? Math.PI : 0;
-            targetScale = isHovered ? 1.04 : 1.0;
-          } else {
-            const slantAngle = offset > 0 ? -0.45 : 0.45;
-            targetPos = new THREE.Vector3(offset * 1.8, -0.1, -1.2);
-            targetRotY = slantAngle;
-            targetScale = 0.8;
-          }
-        } else {
-          // Desktop Horizontal Grid
-          targetPos = new THREE.Vector3(...proj.pos);
-          if (isHovered) {
-            targetPos.z += 0.22;
-          }
-          targetRotY = isFlipped ? Math.PI : 0;
-          targetScale = isHovered ? 1.04 : 1.0;
+        // Position Animation (Keep Y position static, hover pulls slightly forward)
+        const targetPos = new THREE.Vector3(...proj.pos);
+        if (isHovered) {
+          targetPos.z += 0.22;
         }
-
         ref.position.lerp(targetPos, 0.1);
+
+        // Flip Rotation Animation (Y-axis 180 degrees)
+        const targetRotY = isFlipped ? Math.PI : 0;
         ref.rotation.y = THREE.MathUtils.lerp(ref.rotation.y, targetRotY, 0.12);
         ref.rotation.x = THREE.MathUtils.lerp(ref.rotation.x, 0, 0.1);
         ref.rotation.z = THREE.MathUtils.lerp(ref.rotation.z, 0, 0.1);
+
+        // Scale Animation
+        const targetScale = isHovered ? 1.04 : 1.0;
         ref.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.1);
       }
     });
@@ -214,20 +185,13 @@ export function ProjectCards({ activeProject, onSelectProject, projectsData, isM
   const handleCardClick = (id, idx, e) => {
     e.stopPropagation();
     
-    const activeIdx = projects.findIndex(p => p.id === activeProject);
-    const currentActiveIdx = activeIdx === -1 ? 0 : activeIdx;
+    // Toggle flip state
+    setFlippedCards(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
 
-    if (isMobile && idx !== currentActiveIdx) {
-      // Tap inactive card to slide it to the center focus
-      onSelectProject(id);
-    } else {
-      // Toggle flip state of centered card
-      setFlippedCards(prev => ({
-        ...prev,
-        [id]: !prev[id]
-      }));
-      onSelectProject(id);
-    }
+    onSelectProject(id);
   };
 
   const handleLinkClick = (url, e) => {

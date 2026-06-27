@@ -121,25 +121,6 @@ export function InterfaceOverlay({
     };
   }, [isMobile]);
 
-  // Mobile Carousel Navigation Handlers
-  const handlePrevProject = (e) => {
-    e.stopPropagation();
-    if (!projectsData || projectsData.length === 0) return;
-    const activeIdx = projectsData.findIndex(p => p.id === activeProject);
-    const currentActiveIdx = activeIdx === -1 ? 0 : activeIdx;
-    const prevIdx = (currentActiveIdx - 1 + projectsData.length) % projectsData.length;
-    setActiveProject(projectsData[prevIdx].id);
-  };
-
-  const handleNextProject = (e) => {
-    e.stopPropagation();
-    if (!projectsData || projectsData.length === 0) return;
-    const activeIdx = projectsData.findIndex(p => p.id === activeProject);
-    const currentActiveIdx = activeIdx === -1 ? 0 : activeIdx;
-    const nextIdx = (currentActiveIdx + 1) % projectsData.length;
-    setActiveProject(projectsData[nextIdx].id);
-  };
-
   return (
     <div className="hud-container" style={{ padding: isMobile ? '16px' : '24px' }}>
 
@@ -190,7 +171,7 @@ export function InterfaceOverlay({
             flexDirection: 'column',
             gap: '14px',
             pointerEvents: 'auto',
-            transform: activeZone === 'identity' ? 'translateX(0)' : (isMobile ? 'translateY(-100vh)' : 'translateX(-440px)'),
+            transform: activeZone === 'identity' ? 'translateX(0)' : 'translateX(-440px)',
             transition: 'var(--transition-smooth)',
             boxShadow: '0 20px 40px rgba(0, 240, 255, 0.12)'
           }}
@@ -384,8 +365,8 @@ export function InterfaceOverlay({
             gap: '14px',
             overflowY: 'auto',
             pointerEvents: 'auto',
-            marginLeft: isMobile ? '0' : 'auto',
-            transform: activeZone === 'experience' && activeNode ? 'translateY(0)' : (isMobile ? 'translateY(100vh)' : 'translateX(440px)'),
+            marginLeft: 'auto',
+            transform: activeZone === 'experience' && activeNode ? 'translateX(0)' : 'translateX(440px)',
             transition: 'var(--transition-smooth)',
             boxShadow: '0 20px 40px rgba(255, 215, 0, 0.08)'
           }}
@@ -450,31 +431,8 @@ export function InterfaceOverlay({
             </div>
             
             <p style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-              {isMobile 
-                ? 'Swipe horizontally or use the arrows below to cycle cards. Tap card to flip.'
-                : 'Click card to flip. Click [ VISIT LIVE SITE ] to open demo.'
-              }
+              Click card to flip. Click [ VISIT LIVE SITE ] to open demo.
             </p>
-
-            {/* Mobile Carousel Navigation Arrow Controls */}
-            {isMobile && (
-              <div style={{ display: 'flex', gap: '8px', margin: '4px 0', width: '100%' }}>
-                <button
-                  onClick={handlePrevProject}
-                  className="btn-capsule btn-cyan"
-                  style={{ flex: 1, justifyContent: 'center', fontSize: '0.68rem', padding: '6px 12px' }}
-                >
-                  [ &lt; PREV ]
-                </button>
-                <button
-                  onClick={handleNextProject}
-                  className="btn-capsule btn-cyan"
-                  style={{ flex: 1, justifyContent: 'center', fontSize: '0.68rem', padding: '6px 12px' }}
-                >
-                  [ NEXT &gt; ]
-                </button>
-              </div>
-            )}
             
             <div style={{ borderTop: '1px solid rgba(0, 240, 255, 0.1)', margin: '4px 0' }} />
             
@@ -617,7 +575,6 @@ export function InterfaceOverlay({
             onClick={() => {
               setActiveZone('identity');
               setActiveNode(null);
-              if (isMobile) window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             className={`nav-item ${activeZone === 'identity' ? 'active-cyan' : ''}`}
             style={{ 
@@ -642,10 +599,6 @@ export function InterfaceOverlay({
           <button
             onClick={() => {
               setActiveZone('experience');
-              if (isMobile) {
-                const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
-                window.scrollTo({ top: totalHeight * 0.28, behavior: 'smooth' });
-              }
             }}
             className={`nav-item ${activeZone === 'experience' ? 'active-gold' : ''}`}
             style={{ 
@@ -671,10 +624,6 @@ export function InterfaceOverlay({
             onClick={() => {
               setActiveZone('projects');
               setActiveNode(null);
-              if (isMobile) {
-                const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
-                window.scrollTo({ top: totalHeight * 0.52, behavior: 'smooth' });
-              }
             }}
             className={`nav-item ${activeZone === 'projects' ? 'active-cyan' : ''}`}
             style={{ 
@@ -700,10 +649,6 @@ export function InterfaceOverlay({
             onClick={() => {
               setActiveZone('neev');
               setActiveNode(null);
-              if (isMobile) {
-                const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
-                window.scrollTo({ top: totalHeight * 0.76, behavior: 'smooth' });
-              }
             }}
             className={`nav-item ${activeZone === 'neev' ? 'active-cyan' : ''}`}
             style={{ 
@@ -729,10 +674,6 @@ export function InterfaceOverlay({
             onClick={() => {
               setActiveZone('portal');
               setActiveNode(null);
-              if (isMobile) {
-                const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
-                window.scrollTo({ top: totalHeight, behavior: 'smooth' });
-              }
             }}
             className={`nav-item ${activeZone === 'portal' ? 'active-cyan' : ''}`}
             style={{ 

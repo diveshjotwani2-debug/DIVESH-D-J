@@ -89,15 +89,15 @@ export function NeevVideoConsole({ activeZone, isMobile }) {
     const time = state.clock.getElapsedTime();
     if (consoleRef.current) {
       if (isSelected) {
-        // Slide forward to Y = -17 (mobile) or Y = -12.4 (desktop) to perfectly align with camera Zone 4 height
-        const targetPos = new THREE.Vector3(0, isMobile ? -17.0 : -12.4, isMobile ? 3.0 : 3.2);
+        // Slide forward to Y = -12.4 to perfectly align with camera Zone 4 height
+        const targetPos = new THREE.Vector3(0, -12.4, 3.2);
         consoleRef.current.position.lerp(targetPos, 0.1);
         
         // Zero rotation (completely flat and upright) when active to eliminate all slant issues
         consoleRef.current.rotation.set(0, 0, 0);
       } else {
         // Retreat back and down in the void when inactive
-        const targetPos = new THREE.Vector3(0, isMobile ? -17.5 : -13.0, -1.0);
+        const targetPos = new THREE.Vector3(0, -13.0, -1.0);
         consoleRef.current.position.lerp(targetPos, 0.1);
 
         // Slow organic zero-gravity drift rotation when inactive
@@ -108,7 +108,7 @@ export function NeevVideoConsole({ activeZone, isMobile }) {
   });
 
   return (
-    <group ref={consoleRef} position={[0, isMobile ? -17.0 : -13.0, 0]} scale={isMobile ? 0.55 : 1.0}>
+    <group ref={consoleRef} position={[0, -13.0, 0]} scale={1.0}>
       
       {/* 1. Massive Sleek Borderless Glass Display Frame */}
       <mesh position={[0, 0.5, 0]}>
