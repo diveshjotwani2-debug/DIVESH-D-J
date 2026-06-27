@@ -137,7 +137,7 @@ function DataPrismMesh({ isHovered, color }) {
 }
 
 // Modular Action Ring for spinning dashed planetary HUD rings around orbiting nodes
-function NodeActionRing({ isVisible, color, points, hovered }) {
+function NodeActionRing({ isVisible, color, points }) {
   const ringRef = useRef();
 
   useFrame((state) => {
@@ -160,19 +160,6 @@ function NodeActionRing({ isVisible, color, points, hovered }) {
         transparent
         opacity={0.75}
       />
-      
-      {/* Tiny elegant prompt floating below the node casing */}
-      <Billboard position={[0, -0.8, 0]}>
-        <Text
-          fontSize={0.072}
-          color={color}
-          anchorX="center"
-          anchorY="middle"
-          letterSpacing={0.08}
-        >
-          {hovered ? "> EXPAND CHRONICLE <" : "> CLICK TO VIEW <"}
-        </Text>
-      </Billboard>
     </group>
   );
 }
@@ -358,8 +345,24 @@ export function ExperienceOrbit({ activeNode, onSelect, experiencesData, isMobil
               isVisible={isHovered || isCurrentActive}
               color={node.color}
               points={nodeCirclePoints}
-              hovered={isHovered}
             />
+
+            {/* Permanent Interactive prompt below the node */}
+            <Billboard position={[0, -0.82, 0]}>
+              <Text
+                fontSize={0.075}
+                color={node.color}
+                anchorX="center"
+                anchorY="middle"
+                letterSpacing={0.08}
+                fontWeight="bold"
+              >
+                {isCurrentActive 
+                  ? "> CHRONICLE ACTIVE <" 
+                  : (isHovered ? "> CLICK TO EXPLORE <" : "[ CLICK ME ]")
+                }
+              </Text>
+            </Billboard>
 
             {/* Glowing active/hover halo beneath the mesh on the ring */}
             <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, -0.4, 0]}>

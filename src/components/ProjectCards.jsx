@@ -124,7 +124,7 @@ export function ProjectCards({ activeProject, onSelectProject, projectsData, isM
         year: '2026',
         color: '#00f0ff',
         pos: [-1.32, 0, 0],
-        demoUrl: 'https://growiq-ai.netlify.app',
+        demoUrl: 'https://diveshjotwani2-debug.github.io/GrowIQ-/',
         image_url: './assets/growiq.png',
         backDetails: {
           desc: 'AI-driven tool designed to help businesses identify growth opportunities, build strategic roadmaps, and track critical KPIs.',
@@ -141,7 +141,7 @@ export function ProjectCards({ activeProject, onSelectProject, projectsData, isM
         year: '2026',
         color: '#ffd700',
         pos: [1.32, 0, 0],
-        demoUrl: 'https://dukaaniq-retail.netlify.app',
+        demoUrl: 'https://diveshjotwani2-debug.github.io/Dukaan-IQ-final-/',
         image_url: './assets/dukaaniq.png',
         backDetails: {
           desc: 'Full-stack web application for local Indian retail businesses (kiranas, clothing, pharmacies) featuring smart inventory, credit ledger, and AI advisor.',
