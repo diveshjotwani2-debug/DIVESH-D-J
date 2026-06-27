@@ -13,10 +13,11 @@ import { ProjectCards } from './components/ProjectCards';
 import { NeevVideoConsole } from './components/NeevVideoConsole';
 import { ContactPortal } from './components/ContactPortal';
 
-// Import 2D Overlays & Admin Components
+// Import 2D Overlays & Admin & Preloader Components
 import { InterfaceOverlay } from './components/InterfaceOverlay';
 import { AdminLogin } from './components/AdminLogin';
 import { AdminPanel } from './components/AdminPanel';
+import { Preloader } from './components/Preloader';
 
 // Hardcoded Static Fallback Data (resilience state)
 const fallbackExperiences = [
@@ -98,7 +99,7 @@ const fallbackProjects = [
 ];
 
 // Camera Controller for smooth cinematically animated Y-axis vertical glides
-function CameraController({ activeZone, resetTrigger, controlsRef }) {
+function CameraController({ activeZone, resetTrigger, controlsRef, isMobile, scrollPercent }) {
   const { camera } = useThree();
   const targetPos = useRef(new THREE.Vector3(0, 0, 5.2));
   const targetLookAt = useRef(new THREE.Vector3(0, 0, 0));
@@ -107,6 +108,16 @@ function CameraController({ activeZone, resetTrigger, controlsRef }) {
 
   // Configure camera positions, look-at targets, and FOV for each of the 5 Zones
   useEffect(() => {
+    if (isMobile) {
+      // Continuous camera Y vertical glide driven by page scroll position
+      const cameraY = -scrollPercent * 23.0; // Stretches from Y = 0 (Core) to Y = -23 (Portal)
+      targetPos.current.set(0, cameraY, 7.8); // Pull back slightly on Z-axis for vertical portrait framing
+      targetLookAt.current.set(0, cameraY, 0);
+      targetFov.current = 54; // Wider portrait field of view
+      return;
+    }
+
+    // Desktop Discrete Camera glide configurations
     switch (activeZone) {
       case 'identity':
         targetPos.current.set(0, 0, 5.2);
@@ -138,7 +149,7 @@ function CameraController({ activeZone, resetTrigger, controlsRef }) {
         targetLookAt.current.set(0, 0, 0);
         targetFov.current = 45;
     }
-  }, [activeZone, resetTrigger]);
+  }, [activeZone, resetTrigger, isMobile, scrollPercent]);
 
   // Interpolate camera, look-at, and FOV on every frame
   useFrame(() => {
@@ -151,7 +162,7 @@ function CameraController({ activeZone, resetTrigger, controlsRef }) {
       camera.updateProjectionMatrix();
     }
 
-    if (controlsRef.current) {
+    if (controlsRef.current && !isMobile) {
       controlsRef.current.target.lerp(targetLookAt.current, 0.05);
       controlsRef.current.update();
     }
@@ -177,7 +188,63 @@ export default function App() {
   const [projects, setProjects] = useState([]);
   const [loadingDb, setLoadingDb] = useState(true);
 
-  // 1. Listen for URL path or hash changes (Lightweight Client-Side Router)
+  // Responsive & Preloader States
+  const [isMobile, setIsMobile] = useState(false);
+  const [scrollPercent, setScrollPercent] = useState(0);
+  const [isBooted, setIsBooted] = useState(false);
+
+  // 1. Listen for viewport size updates (Mobile detection)
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // 2. Mobile scroll listener: maps document scroll position directly to camera heights
+  useEffect(() => {
+    if (!isMobile) {
+      document.body.style.overflowY = 'hidden';
+      document.body.style.height = 'auto';
+      return;
+    }
+
+    document.body.style.overflowY = 'scroll';
+    document.body.style.height = '500vh'; // 5 pages of scrollable depth
+
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const percent = docHeight > 0 ? scrollTop / docHeight : 0;
+      setScrollPercent(percent);
+
+      // Map scroll progress percentages to discrete active HUD zones
+      if (percent < 0.15) {
+        setActiveZone('identity');
+      } else if (percent >= 0.15 && percent < 0.40) {
+        setActiveZone('experience');
+      } else if (percent >= 0.40 && percent < 0.65) {
+        setActiveZone('projects');
+      } else if (percent >= 0.65 && percent < 0.88) {
+        setActiveZone('neev');
+      } else {
+        setActiveZone('portal');
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      document.body.style.overflowY = 'auto';
+      document.body.style.height = 'auto';
+    };
+  }, [isMobile]);
+
+  // 3. Listen for URL path or hash changes (Lightweight Client-Side Router)
   useEffect(() => {
     const handleLocationChange = () => {
       setCurrentPath(window.location.hash || window.location.pathname);
@@ -203,7 +270,7 @@ export default function App() {
     };
   }, []);
 
-  // 2. Fetch live data from Supabase Core
+  // 4. Fetch live data from Supabase Core
   useEffect(() => {
     const loadCoreData = async () => {
       try {
@@ -253,7 +320,7 @@ export default function App() {
             tagline: proj.tagline,
             year: proj.year || '2026',
             color: proj.color || '#00f0ff',
-            // Position dynamically on the X-axis: space cards symmetrically
+            // Position dynamically on the X-axis: space cards symmetrically on desktop
             pos: [(idx - (projData.length - 1) / 2) * 2.64, 0, 0],
             demoUrl: proj.demo_url,
             image_url: proj.image_url,
@@ -302,6 +369,7 @@ export default function App() {
     setActiveNode(null);
     setActiveProject(null);
     setActiveZone('identity');
+    if (isMobile) window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // ================= ROUTER ROUTE CONTROLLER =================
@@ -321,7 +389,10 @@ export default function App() {
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
       
-      {/* 2D HUD Interface Overlay */}
+      {/* 1. System Boot Preloader */}
+      {!isBooted && <Preloader onComplete={() => setIsBooted(true)} />}
+
+      {/* 2. 2D HUD Interface Overlay */}
       <InterfaceOverlay
         activeZone={activeZone}
         setActiveZone={setActiveZone}
@@ -330,12 +401,14 @@ export default function App() {
         activeProject={activeProject}
         setActiveProject={handleSelectProject}
         resetCamera={resetCamera}
+        isMobile={isMobile}
+        projectsData={projects}
       />
 
       {/* Cinematic Vignette Overlay to blend edges of canvas */}
       <div className="vignette-overlay" />
 
-      {/* 3D Render Canvas */}
+      {/* 3. 3D Render Canvas */}
       <Canvas
         shadows
         camera={{ position: [0, 0, 5.2], fov: 45 }}
@@ -350,19 +423,22 @@ export default function App() {
         {/* Starfield & Cosmic Dust Particles */}
         <BackgroundParticles />
 
-        {/* Smooth Vertical Camera Controller */}
+        {/* Smooth Vertical Camera Controller (supports continuous mobile scroll glides) */}
         <CameraController
           activeZone={activeZone}
           resetTrigger={resetTrigger}
           controlsRef={controlsRef}
+          isMobile={isMobile}
+          scrollPercent={scrollPercent}
         />
 
-        {/* Orbit Controls (constrained to lock viewport to our vertical pipeline) */}
+        {/* Orbit Controls (disabled on mobile to prevent conflicts with scroll mechanics) */}
         <OrbitControls
           ref={controlsRef}
+          enabled={!isMobile}
           enableZoom={true}
           enablePan={false}
-          maxPolarAngle={Math.PI / 1.7} // Limit vertical rotation
+          maxPolarAngle={Math.PI / 1.7} 
           minPolarAngle={Math.PI / 3.5}  
           maxDistance={10}
           minDistance={3.5}
@@ -377,37 +453,39 @@ export default function App() {
         </group>
 
         {/* ================= ZONE 2: THE ORBITAL TIMELINE (EXPERIENCE) ================= */}
-        {/* Fed with either dynamic database nodes or offline fallbacks */}
-        <group position={[0, 0, 0]} visible={activeZone === 'identity' || activeZone === 'experience'}>
+        {/* Helix Timeline shifts down to Y = -5 on mobile to avoid overlapping the Core avatar */}
+        <group position={isMobile ? [0, -5, 0] : [0, 0, 0]} visible={activeZone === 'identity' || activeZone === 'experience'}>
           <ExperienceOrbit
             activeNode={activeNode}
             onSelect={handleSelect}
             experiencesData={experiences}
+            isMobile={isMobile}
           />
         </group>
 
         {/* ================= ZONE 3: THE PROJECT VAULT (GALLERY) ================= */}
-        {/* Positioned dynamically on X-axis and loaded dynamically */}
+        {/* Monolith layout shifts down to Y = -11 on mobile and renders as a carousel */}
         <Suspense fallback={null}>
-          <group position={[0, -6, 0]} visible={activeZone === 'projects'}>
+          <group position={isMobile ? [0, -11, 0] : [0, -6, 0]} visible={activeZone === 'projects'}>
             <ProjectCards
               activeProject={activeProject}
               onSelectProject={handleSelectProject}
               projectsData={projects}
+              isMobile={isMobile}
             />
           </group>
         </Suspense>
 
         {/* ================= ZONE 4: THE NEEV SHOWCASE (THEATER) ================= */}
         <Suspense fallback={null}>
-          <group visible={activeZone === 'neev'}>
-            <NeevVideoConsole activeZone={activeZone} />
+          <group position={[0, 0, 0]} visible={activeZone === 'neev'}>
+            <NeevVideoConsole activeZone={activeZone} isMobile={isMobile} />
           </group>
         </Suspense>
 
         {/* ================= ZONE 5: THE PORTAL (SKILLS & CONTACT) ================= */}
-        <group visible={activeZone === 'portal'}>
-          <ContactPortal isActive={activeZone === 'portal'} />
+        <group position={[0, 0, 0]} visible={activeZone === 'portal'}>
+          <ContactPortal isActive={activeZone === 'portal'} isMobile={isMobile} />
         </group>
 
       </Canvas>

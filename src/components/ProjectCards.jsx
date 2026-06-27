@@ -91,7 +91,7 @@ function CardActionRing({ isVisible, color, points, isFlipped }) {
   );
 }
 
-export function ProjectCards({ activeProject, onSelectProject, projectsData }) {
+export function ProjectCards({ activeProject, onSelectProject, projectsData, isMobile }) {
   // State to track flipped cards
   const [flippedCards, setFlippedCards] = useState({});
   const [hoveredCard, setHoveredCard] = useState(null);
@@ -154,46 +154,80 @@ export function ProjectCards({ activeProject, onSelectProject, projectsData }) {
     ];
   }, [projectsData]);
 
+  // Synchronize default active project selection on mobile mount
+  useEffect(() => {
+    if (isMobile && !activeProject && projects.length > 0) {
+      onSelectProject(projects[0].id);
+    }
+  }, [isMobile, activeProject, projects, onSelectProject]);
+
   // Animate the cards floating, flipping, and sliding back
   useFrame((state) => {
     const time = state.clock.getElapsedTime();
 
-    projects.forEach((proj) => {
+    const activeIndex = projects.findIndex(p => p.id === activeProject);
+    const currentActiveIdx = activeIndex === -1 ? 0 : activeIndex;
+
+    projects.forEach((proj, idx) => {
       const ref = cardRefs.current[proj.id];
       if (ref) {
         const isFlipped = flippedCards[proj.id];
         const isHovered = hoveredCard === proj.id;
         
-        // Position Animation (Keep Y position static, hover pulls slightly forward)
-        let targetPos = new THREE.Vector3(...proj.pos);
-        if (isHovered) {
-          targetPos.z += 0.22;
-        }
-        ref.position.lerp(targetPos, 0.1);
+        let targetPos;
+        let targetRotY = isFlipped ? Math.PI : 0;
+        let targetScale = 1.0;
 
-        // Flip Rotation Animation (Y-axis 180 degrees)
-        const targetRotY = isFlipped ? Math.PI : 0;
+        if (isMobile) {
+          // Mobile Carousel Math: centering active index, receding & slanting neighbors
+          const offset = idx - currentActiveIdx;
+          
+          if (offset === 0) {
+            targetPos = new THREE.Vector3(0, 0, isHovered ? 0.22 : 0);
+            targetRotY = isFlipped ? Math.PI : 0;
+            targetScale = isHovered ? 1.04 : 1.0;
+          } else {
+            const slantAngle = offset > 0 ? -0.45 : 0.45;
+            targetPos = new THREE.Vector3(offset * 1.8, -0.1, -1.2);
+            targetRotY = slantAngle;
+            targetScale = 0.8;
+          }
+        } else {
+          // Desktop Horizontal Grid
+          targetPos = new THREE.Vector3(...proj.pos);
+          if (isHovered) {
+            targetPos.z += 0.22;
+          }
+          targetRotY = isFlipped ? Math.PI : 0;
+          targetScale = isHovered ? 1.04 : 1.0;
+        }
+
+        ref.position.lerp(targetPos, 0.1);
         ref.rotation.y = THREE.MathUtils.lerp(ref.rotation.y, targetRotY, 0.12);
         ref.rotation.x = THREE.MathUtils.lerp(ref.rotation.x, 0, 0.1);
         ref.rotation.z = THREE.MathUtils.lerp(ref.rotation.z, 0, 0.1);
-
-        // Scale Animation
-        const targetScale = isHovered ? 1.04 : 1.0;
         ref.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.1);
       }
     });
   });
 
-  const handleCardClick = (id, e) => {
+  const handleCardClick = (id, idx, e) => {
     e.stopPropagation();
     
-    // Toggle flip state
-    setFlippedCards(prev => ({
-      ...prev,
-      [id]: !prev[id]
-    }));
+    const activeIdx = projects.findIndex(p => p.id === activeProject);
+    const currentActiveIdx = activeIdx === -1 ? 0 : activeIdx;
 
-    onSelectProject(id);
+    if (isMobile && idx !== currentActiveIdx) {
+      // Tap inactive card to slide it to the center focus
+      onSelectProject(id);
+    } else {
+      // Toggle flip state of centered card
+      setFlippedCards(prev => ({
+        ...prev,
+        [id]: !prev[id]
+      }));
+      onSelectProject(id);
+    }
   };
 
   const handleLinkClick = (url, e) => {
@@ -249,7 +283,7 @@ export function ProjectCards({ activeProject, onSelectProject, projectsData }) {
       </Billboard>
 
       {/* ================= PROJECT TRADING CARDS ================= */}
-      {projects.map((proj) => {
+      {projects.map((proj, index) => {
         const isFlipped = !!flippedCards[proj.id];
         const isHovered = hoveredCard === proj.id;
 
@@ -458,7 +492,7 @@ export function ProjectCards({ activeProject, onSelectProject, projectsData }) {
             {/* Invisible Raycast Collider Plane for buttery-smooth card hover/click interaction */}
             <mesh
               position={[0, 0, 0.025]}
-              onClick={(e) => handleCardClick(proj.id, e)}
+              onClick={(e) => handleCardClick(proj.id, index, e)}
               onPointerOver={(e) => {
                 e.stopPropagation();
                 setHoveredCard(proj.id);

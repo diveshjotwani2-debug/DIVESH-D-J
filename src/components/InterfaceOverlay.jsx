@@ -22,18 +22,23 @@ export function InterfaceOverlay({
   setActiveZone,
   activeNode,
   setActiveNode,
-  resetCamera
+  activeProject,
+  setActiveProject,
+  resetCamera,
+  isMobile,
+  projectsData
 }) {
   const cursorDotRef = useRef(null);
   const cursorRingRef = useRef(null);
 
-  // Synchronized, hardware-accelerated custom cursor script
+  // Synchronized, hardware-accelerated custom cursor script (Desktop Only)
   useEffect(() => {
+    if (isMobile) return;
+
     const dot = cursorDotRef.current;
     const ring = cursorRingRef.current;
     if (!dot || !ring) return;
 
-    // Enable custom cursor styles on body
     document.body.classList.add('custom-cursor-active');
 
     let mouseX = 0;
@@ -43,20 +48,17 @@ export function InterfaceOverlay({
     let ringX = 0;
     let ringY = 0;
 
-    // Lightweight listener: only records coordinates, avoiding DOM writes or layout calculations
     const onMouseMove = (e) => {
       mouseX = e.clientX;
       mouseY = e.clientY;
     };
 
-    // Synchronize both dot and ring style updates to the browser's repaint cycle (60fps+)
     let animationFrameId;
     const updateCursorPositions = () => {
       dotX = mouseX;
       dotY = mouseY;
       dot.style.transform = `translate3d(${dotX}px, ${dotY}px, 0)`;
 
-      // Ring lags smoothly behind using linear interpolation (lerp)
       ringX += (mouseX - ringX) * 0.16;
       ringY += (mouseY - ringY) * 0.16;
       ring.style.transform = `translate3d(${ringX}px, ${ringY}px, 0)`;
@@ -67,7 +69,6 @@ export function InterfaceOverlay({
     window.addEventListener('mousemove', onMouseMove);
     animationFrameId = requestAnimationFrame(updateCursorPositions);
 
-    // Hover state managers for interactive elements
     const handleMouseOver = (e) => {
       const target = e.target;
       if (!target) return;
@@ -87,7 +88,6 @@ export function InterfaceOverlay({
         dot.classList.add('hover-active');
         ring.classList.add('hover-active');
         
-        // Determine hover accent color (cyan vs gold) based on active state or node class
         const isGold = 
           target.classList.contains('active-gold') || 
           target.classList.contains('btn-gold') || 
@@ -105,7 +105,6 @@ export function InterfaceOverlay({
     };
 
     const handleMouseOut = (e) => {
-      // Reset classes
       dot.className = 'custom-cursor-dot';
       ring.className = 'custom-cursor-ring';
     };
@@ -120,21 +119,40 @@ export function InterfaceOverlay({
       window.removeEventListener('mouseout', handleMouseOut);
       cancelAnimationFrame(animationFrameId);
     };
-  }, []);
+  }, [isMobile]);
+
+  // Mobile Carousel Navigation Handlers
+  const handlePrevProject = (e) => {
+    e.stopPropagation();
+    if (!projectsData || projectsData.length === 0) return;
+    const activeIdx = projectsData.findIndex(p => p.id === activeProject);
+    const currentActiveIdx = activeIdx === -1 ? 0 : activeIdx;
+    const prevIdx = (currentActiveIdx - 1 + projectsData.length) % projectsData.length;
+    setActiveProject(projectsData[prevIdx].id);
+  };
+
+  const handleNextProject = (e) => {
+    e.stopPropagation();
+    if (!projectsData || projectsData.length === 0) return;
+    const activeIdx = projectsData.findIndex(p => p.id === activeProject);
+    const currentActiveIdx = activeIdx === -1 ? 0 : activeIdx;
+    const nextIdx = (currentActiveIdx + 1) % projectsData.length;
+    setActiveProject(projectsData[nextIdx].id);
+  };
 
   return (
-    <div className="hud-container">
+    <div className="hud-container" style={{ padding: isMobile ? '16px' : '24px' }}>
 
       {/* ================= TOP BAR: STATUS & CONTROLS ================= */}
       <div className="hud-interactive" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-        <div className="glass-panel" style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Compass className="text-cyan pulse-text" size={18} />
+        <div className="glass-panel" style={{ padding: isMobile ? '8px 16px' : '12px 24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <Compass className="text-cyan pulse-text" size={16} />
           <div>
-            <h1 style={{ fontSize: '1rem', fontWeight: 700, letterSpacing: '0.1em', fontFamily: 'var(--font-heading)' }}>
+            <h1 style={{ fontSize: isMobile ? '0.78rem' : '1rem', fontWeight: 700, letterSpacing: '0.1em', fontFamily: 'var(--font-heading)' }}>
               THE ZERO-GRAVITY ARCHIVE
             </h1>
-            <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>
-              SYSTEM STATUS: ONLINE // AGENT: DIVESH DHIRAJ JOTWANI
+            <p style={{ fontSize: isMobile ? '0.52rem' : '0.65rem', color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>
+              SYSTEM STATUS: ONLINE // AGENT: DIVESH D J
             </p>
           </div>
         </div>
@@ -144,7 +162,7 @@ export function InterfaceOverlay({
           onClick={resetCamera}
           className="glass-panel glow-hover-cyan"
           style={{
-            padding: '12px',
+            padding: isMobile ? '8px' : '12px',
             border: '1px solid var(--glass-border)',
             display: 'flex',
             alignItems: 'center',
@@ -154,45 +172,45 @@ export function InterfaceOverlay({
           }}
           title="Reset System State"
         >
-          <RefreshCw size={16} />
+          <RefreshCw size={14} />
         </button>
       </div>
 
       {/* ================= MIDDLE SECTION: INTERACTIVE SLIDE PANELS ================= */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', flex: 1, margin: '24px 0', pointerEvents: 'none' }}>
+      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', width: '100%', flex: 1, margin: isMobile ? '12px 0' : '24px 0', pointerEvents: 'none', overflow: 'hidden' }}>
         
         {/* LEFT PANEL: COMPREHENSIVE DIGITAL CV (Zone 1) */}
         <div
           className="hud-interactive glass-panel-cyan"
           style={{
-            width: '420px',
-            maxHeight: '85vh',
-            padding: '24px',
+            width: isMobile ? '100%' : '420px',
+            maxHeight: isMobile ? '62vh' : '85vh',
+            padding: isMobile ? '16px' : '24px',
             display: activeZone === 'identity' ? 'flex' : 'none',
             flexDirection: 'column',
-            gap: '16px',
+            gap: '14px',
             pointerEvents: 'auto',
-            transform: activeZone === 'identity' ? 'translateX(0)' : 'translateX(-440px)',
+            transform: activeZone === 'identity' ? 'translateX(0)' : (isMobile ? 'translateY(-100vh)' : 'translateX(-440px)'),
             transition: 'var(--transition-smooth)',
             boxShadow: '0 20px 40px rgba(0, 240, 255, 0.12)'
           }}
           onWheel={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
         >
-          {/* FIXED HEADER */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', borderBottom: '1px solid var(--glass-border-cyan)', paddingBottom: '14px', flexShrink: 0 }}>
-            <div style={{ background: 'rgba(0, 240, 255, 0.1)', padding: '10px', borderRadius: '12px' }}>
-              <User className="text-cyan" size={24} />
+          {/* CV HEADER */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderBottom: '1px solid var(--glass-border-cyan)', paddingBottom: '10px', flexShrink: 0 }}>
+            <div style={{ background: 'rgba(0, 240, 255, 0.1)', padding: '8px', borderRadius: '10px' }}>
+              <User className="text-cyan" size={20} />
             </div>
             <div>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, fontFamily: 'var(--font-heading)' }}>Divesh Dhiraj Jotwani</h2>
-              <p style={{ fontSize: '0.72rem', color: 'var(--accent-cyan)', fontWeight: 600 }}>Creative Media Professional & AI Product Strategist</p>
+              <h2 style={{ fontSize: isMobile ? '1.05rem' : '1.25rem', fontWeight: 700, fontFamily: 'var(--font-heading)' }}>Divesh Dhiraj Jotwani</h2>
+              <p style={{ fontSize: isMobile ? '0.62rem' : '0.72rem', color: 'var(--accent-cyan)', fontWeight: 600 }}>Creative Media & AI Product Strategist</p>
             </div>
           </div>
 
-          {/* FIXED ABOUT ME & DOWNLOAD BUTTON */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flexShrink: 0 }}>
-            <div style={{ fontSize: '0.8rem', lineHeight: '1.5', color: 'var(--text-secondary)' }}>
+          {/* BIO & DOWNLOAD BUTTON */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flexShrink: 0 }}>
+            <div style={{ fontSize: isMobile ? '0.72rem' : '0.8rem', lineHeight: '1.4', color: 'var(--text-secondary)' }}>
               <p>
                 Creative media and marketing professional with a strong inclination towards product management and AI-driven growth. Blending creativity with real business impact.
               </p>
@@ -205,14 +223,14 @@ export function InterfaceOverlay({
               style={{
                 justifyContent: 'center',
                 textDecoration: 'none',
-                padding: '10px 16px',
-                fontSize: '0.75rem',
+                padding: isMobile ? '8px 12px' : '10px 16px',
+                fontSize: isMobile ? '0.68rem' : '0.75rem',
                 letterSpacing: '0.05em',
                 width: '100%'
               }}
             >
-              <FileDown size={14} />
-              <span>DOWNLOAD FULL RESUME (PDF)</span>
+              <FileDown size={13} />
+              <span>DOWNLOAD RESUME (PDF)</span>
             </a>
           </div>
 
@@ -223,39 +241,39 @@ export function InterfaceOverlay({
             style={{ 
               flex: 1, 
               overflowY: 'auto', 
-              paddingRight: '6px', 
+              paddingRight: '4px', 
               display: 'flex', 
               flexDirection: 'column', 
-              gap: '16px',
+              gap: '14px',
               scrollBehavior: 'smooth'
             }}
           >
             {/* Education Section */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ffffff' }}>
-                <GraduationCap className="text-cyan" size={16} />
-                <h3 style={{ fontSize: '0.85rem', fontWeight: 700, fontFamily: 'var(--font-heading)', letterSpacing: '0.05em' }}>
+                <GraduationCap className="text-cyan" size={14} />
+                <h3 style={{ fontSize: '0.78rem', fontWeight: 700, fontFamily: 'var(--font-heading)', letterSpacing: '0.05em' }}>
                   EDUCATION
                 </h3>
               </div>
-              <div style={{ paddingLeft: '24px' }}>
-                <h4 style={{ fontSize: '0.8rem', color: '#ffffff', fontWeight: 600 }}>Bachelor of Computer Applications (BCA)</h4>
-                <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>KLE RLS College, Belgaum</p>
-                <p style={{ fontSize: '0.72rem', color: 'var(--accent-cyan)', marginTop: '2px' }}>Tenure: 2022 - 2025</p>
+              <div style={{ paddingLeft: '22px' }}>
+                <h4 style={{ fontSize: '0.75rem', color: '#ffffff', fontWeight: 600 }}>Bachelor of Computer Applications (BCA)</h4>
+                <p style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>KLE RLS College, Belgaum</p>
+                <p style={{ fontSize: '0.68rem', color: 'var(--accent-cyan)', marginTop: '2px' }}>Tenure: 2022 - 2025</p>
               </div>
             </div>
 
             <div style={{ borderTop: '1px solid rgba(0, 240, 255, 0.1)', margin: '2px 0' }} />
 
             {/* Certifications Section */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ffffff' }}>
-                <Award className="text-cyan" size={16} />
-                <h3 style={{ fontSize: '0.85rem', fontWeight: 700, fontFamily: 'var(--font-heading)', letterSpacing: '0.05em' }}>
+                <Award className="text-cyan" size={14} />
+                <h3 style={{ fontSize: '0.78rem', fontWeight: 700, fontFamily: 'var(--font-heading)', letterSpacing: '0.05em' }}>
                   CERTIFICATIONS & SIMULATIONS
                 </h3>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingLeft: '24px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', paddingLeft: '22px', fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
                 <div>
                   <strong style={{ color: '#fff' }}>AI Product Management: Strategy & Roadmaps</strong>
                   <div>Udemy • May 2026</div>
@@ -270,11 +288,7 @@ export function InterfaceOverlay({
                 </div>
                 <div>
                   <strong style={{ color: '#fff' }}>AI and ML Certification Course (42 hrs)</strong>
-                  <div>Seminarroom Education / KLE BCA Belagavi • Mar-Apr 2025</div>
-                </div>
-                <div>
-                  <strong style={{ color: '#fff' }}>AI using Python Certification Course (42 hrs)</strong>
-                  <div>Seminarroom Education / KLE BCA Belagavi • Nov-Dec 2024</div>
+                  <div>Seminarroom Education / KLE BCA Belagavi • 2025</div>
                 </div>
               </div>
             </div>
@@ -282,30 +296,29 @@ export function InterfaceOverlay({
             <div style={{ borderTop: '1px solid rgba(0, 240, 255, 0.1)', margin: '2px 0' }} />
 
             {/* Skills & Tools Section */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ffffff' }}>
-                <Cpu className="text-cyan" size={16} />
-                <h3 style={{ fontSize: '0.85rem', fontWeight: 700, fontFamily: 'var(--font-heading)', letterSpacing: '0.05em' }}>
+                <Cpu className="text-cyan" size={14} />
+                <h3 style={{ fontSize: '0.78rem', fontWeight: 700, fontFamily: 'var(--font-heading)', letterSpacing: '0.05em' }}>
                   SKILLS & TOOLS
                 </h3>
               </div>
               
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingLeft: '24px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', paddingLeft: '22px' }}>
                 {/* Creative Category */}
                 <div>
-                  <h4 style={{ fontSize: '0.72rem', color: 'var(--accent-cyan)', fontWeight: 700, letterSpacing: '0.05em', marginBottom: '6px' }}>
+                  <h4 style={{ fontSize: '0.68rem', color: 'var(--accent-cyan)', fontWeight: 700, letterSpacing: '0.05em', marginBottom: '4px' }}>
                     CREATIVE MEDIA & MARKETING
                   </h4>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                    {['Video Editing', 'Content Creation', 'AI-based Posters', 'Brand Shoots', 'Shopify Management', 'Digital Marketing & SEO'].map((s, idx) => (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                    {['Video Editing', 'Content Creation', 'AI-based Posters', 'Shopify Management', 'Digital Marketing'].map((s, idx) => (
                       <span key={idx} style={{
-                        fontSize: '0.66rem',
+                        fontSize: '0.62rem',
                         background: 'rgba(0, 240, 255, 0.04)',
                         color: '#ffffff',
                         border: '1px solid rgba(0, 240, 255, 0.12)',
-                        padding: '3px 8px',
-                        borderRadius: '4px',
-                        display: 'inline-block'
+                        padding: '2px 6px',
+                        borderRadius: '4px'
                       }}>
                         {s}
                       </span>
@@ -315,41 +328,18 @@ export function InterfaceOverlay({
 
                 {/* AI Tools Category */}
                 <div>
-                  <h4 style={{ fontSize: '0.72rem', color: '#ffd700', fontWeight: 700, letterSpacing: '0.05em', marginBottom: '6px' }}>
+                  <h4 style={{ fontSize: '0.68rem', color: '#ffd700', fontWeight: 700, letterSpacing: '0.05em', marginBottom: '4px' }}>
                     AI & PRODUCTIVITY PLATFORMS
                   </h4>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                     {['Claude AI', 'ChatGPT', 'Gemini', 'Perplexity', 'Grok AI'].map((s, idx) => (
                       <span key={idx} style={{
-                        fontSize: '0.66rem',
+                        fontSize: '0.62rem',
                         background: 'rgba(255, 215, 0, 0.04)',
                         color: '#ffffff',
                         border: '1px solid rgba(255, 215, 0, 0.15)',
-                        padding: '3px 8px',
-                        borderRadius: '4px',
-                        display: 'inline-block'
-                      }}>
-                        {s}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Technical Category */}
-                <div>
-                  <h4 style={{ fontSize: '0.72rem', color: '#ffffff', fontWeight: 700, letterSpacing: '0.05em', marginBottom: '6px' }}>
-                    TECHNICAL & PRODUCT MANAGEMENT
-                  </h4>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                    {['Python', 'Power BI', 'HTML/CSS', 'JavaScript', 'AWS', 'MongoDB', 'Advanced Excel', 'AI Product Strategy', 'KPI Development'].map((s, idx) => (
-                      <span key={idx} style={{
-                        fontSize: '0.66rem',
-                        background: 'rgba(255, 255, 255, 0.03)',
-                        color: '#ffffff',
-                        border: '1px solid rgba(255, 255, 255, 0.08)',
-                        padding: '3px 8px',
-                        borderRadius: '4px',
-                        display: 'inline-block'
+                        padding: '2px 6px',
+                        borderRadius: '4px'
                       }}>
                         {s}
                       </span>
@@ -357,61 +347,24 @@ export function InterfaceOverlay({
                   </div>
                 </div>
               </div>
-            </div>
-
-            <div style={{ borderTop: '1px solid rgba(0, 240, 255, 0.1)', margin: '2px 0' }} />
-
-            {/* Languages Section */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ffffff' }}>
-                <Globe className="text-cyan" size={16} />
-                <h3 style={{ fontSize: '0.85rem', fontWeight: 700, fontFamily: 'var(--font-heading)', letterSpacing: '0.05em' }}>
-                  LANGUAGES
-                </h3>
-              </div>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', paddingLeft: '24px' }}>
-                English • Hindi • Sindhi • Marathi • Kannada
-              </p>
             </div>
 
             <div style={{ borderTop: '1px solid rgba(0, 240, 255, 0.1)', margin: '2px 0' }} />
 
             {/* Contact Details */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.75rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-secondary)' }}>
-                <MapPin size={13} className="text-cyan" />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.7rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)' }}>
+                <MapPin size={12} className="text-cyan" />
                 <span>Belgaum, Karnataka, India</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-secondary)' }}>
-                <Phone size={13} className="text-cyan" />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)' }}>
+                <Phone size={12} className="text-cyan" />
                 <span>+91 6360321605</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-secondary)' }}>
-                <Mail size={13} className="text-cyan" />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)' }}>
+                <Mail size={12} className="text-cyan" />
                 <a href="mailto:diveshjotwani2@gmail.com" style={{ color: '#fff', textDecoration: 'none' }}>
                   diveshjotwani2@gmail.com
-                </a>
-              </div>
-              <div style={{ display: 'flex', gap: '12px', marginTop: '4px' }}>
-                <a 
-                  href="https://linkedin.com/in/diveshjotwani" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-secondary)', textDecoration: 'none' }}
-                  className="text-cyan-hover"
-                >
-                  <svg viewBox="0 0 24 24" width="13" height="13" stroke="#00f0ff" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" className="text-cyan"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg>
-                  <span style={{ borderBottom: '1px solid transparent' }}>LinkedIn</span>
-                </a>
-                <a 
-                  href="https://github.com/diveshjotwani2-debug" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-secondary)', textDecoration: 'none' }}
-                  className="text-cyan-hover"
-                >
-                  <svg viewBox="0 0 24 24" width="13" height="13" stroke="#00f0ff" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" className="text-cyan"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
-                  <span>GitHub</span>
                 </a>
               </div>
             </div>
@@ -419,43 +372,45 @@ export function InterfaceOverlay({
         </div>
 
         {/* RIGHT PANEL: EXPERIENCE DETAIL (Zone 2) */}
+        {/* Slides up from the bottom (translateY) on mobile rather than from the side */}
         <div
           className="hud-interactive glass-panel-gold"
           style={{
-            width: '420px',
-            maxHeight: '90%',
-            padding: '24px',
+            width: isMobile ? '100%' : '420px',
+            maxHeight: isMobile ? '60vh' : '90%',
+            padding: isMobile ? '16px' : '24px',
             display: activeZone === 'experience' && activeNode ? 'flex' : 'none',
             flexDirection: 'column',
-            gap: '16px',
+            gap: '14px',
             overflowY: 'auto',
             pointerEvents: 'auto',
-            marginLeft: 'auto',
-            transform: activeZone === 'experience' && activeNode ? 'translateX(0)' : 'translateX(440px)',
-            transition: 'var(--transition-smooth)'
+            marginLeft: isMobile ? '0' : 'auto',
+            transform: activeZone === 'experience' && activeNode ? 'translateY(0)' : (isMobile ? 'translateY(100vh)' : 'translateX(440px)'),
+            transition: 'var(--transition-smooth)',
+            boxShadow: '0 20px 40px rgba(255, 215, 0, 0.08)'
           }}
         >
           {activeNode && (
             <>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', borderBottom: '1px solid var(--glass-border-gold)', paddingBottom: '16px' }}>
-                <div style={{ background: 'rgba(255, 215, 0, 0.1)', padding: '10px', borderRadius: '12px' }}>
-                  <Briefcase className="text-gold" size={24} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderBottom: '1px solid var(--glass-border-gold)', paddingBottom: '12px' }}>
+                <div style={{ background: 'rgba(255, 215, 0, 0.1)', padding: '8px', borderRadius: '10px' }}>
+                  <Briefcase className="text-gold" size={20} />
                 </div>
                 <div>
-                  <h2 style={{ fontSize: '1.2rem', fontWeight: 700, fontFamily: 'var(--font-heading)' }}>{activeNode.company}</h2>
-                  <p style={{ fontSize: '0.78rem', color: 'var(--accent-gold)', fontWeight: 600 }}>{activeNode.details.role}</p>
+                  <h2 style={{ fontSize: isMobile ? '1.0rem' : '1.2rem', fontWeight: 700, fontFamily: 'var(--font-heading)' }}>{activeNode.company}</h2>
+                  <p style={{ fontSize: isMobile ? '0.72rem' : '0.78rem', color: 'var(--accent-gold)', fontWeight: 600 }}>{activeNode.details.role}</p>
                 </div>
               </div>
 
-              <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>DURATION: {activeNode.details.duration}</span>
-                <span className="text-gold" style={{ fontWeight: 600 }}>Interactive Node</span>
+                <span className="text-gold" style={{ fontWeight: 600 }}>Active Node</span>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.78rem', lineHeight: '1.5' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: isMobile ? '0.72rem' : '0.78rem', lineHeight: '1.4' }}>
                 {activeNode.details.highlights.map((highlight, index) => (
-                  <div key={index} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent-gold)', marginTop: '6px', flexShrink: 0 }} />
+                  <div key={index} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                    <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: 'var(--accent-gold)', marginTop: '5px', flexShrink: 0 }} />
                     <p style={{ color: 'var(--text-secondary)' }}>{highlight}</p>
                   </div>
                 ))}
@@ -464,7 +419,7 @@ export function InterfaceOverlay({
               <button
                 onClick={() => { setActiveNode(null); }}
                 className="btn-capsule btn-gold"
-                style={{ marginTop: 'auto', alignSelf: 'stretch', justifyContent: 'center', fontSize: '0.75rem' }}
+                style={{ marginTop: 'auto', alignSelf: 'stretch', justifyContent: 'center', fontSize: '0.72rem', padding: '8px' }}
               >
                 Return to Timeline
               </button>
@@ -477,38 +432,58 @@ export function InterfaceOverlay({
           <div
             className="hud-interactive glass-panel-cyan"
             style={{
-              padding: '16px 24px',
+              padding: isMobile ? '16px' : '16px 24px',
               pointerEvents: 'auto',
-              marginLeft: 'auto',
+              marginLeft: isMobile ? '0' : 'auto',
               marginTop: 'auto',
-              maxWidth: '350px',
+              width: isMobile ? '100%' : '350px',
               display: 'flex',
               flexDirection: 'column',
-              gap: '8px'
+              gap: '6px'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Info className="text-cyan pulse-text" size={16} />
-              <span style={{ fontSize: '0.8rem', fontWeight: 600, fontFamily: 'var(--font-heading)' }}>
+              <Info className="text-cyan pulse-text" size={14} />
+              <span style={{ fontSize: isMobile ? '0.75rem' : '0.8rem', fontWeight: 600, fontFamily: 'var(--font-heading)' }}>
                 ZONE 3: THE PROJECT VAULT
               </span>
             </div>
-            <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-              Inspect standalone software applications. Click a trading card to flip it and reveal the technical specs.
-            </p>
-            <p style={{ fontSize: '0.7rem', color: 'var(--accent-cyan)', fontWeight: 500, lineHeight: '1.4' }}>
-              Click the glowing <strong>[ VISIT LIVE SITE ]</strong> button on the back of any card to open its live demo.
-            </p>
             
-            <div style={{ borderTop: '1px solid rgba(0, 240, 255, 0.1)', margin: '6px 0' }} />
+            <p style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+              {isMobile 
+                ? 'Swipe horizontally or use the arrows below to cycle cards. Tap card to flip.'
+                : 'Click card to flip. Click [ VISIT LIVE SITE ] to open demo.'
+              }
+            </p>
+
+            {/* Mobile Carousel Navigation Arrow Controls */}
+            {isMobile && (
+              <div style={{ display: 'flex', gap: '8px', margin: '4px 0', width: '100%' }}>
+                <button
+                  onClick={handlePrevProject}
+                  className="btn-capsule btn-cyan"
+                  style={{ flex: 1, justifyContent: 'center', fontSize: '0.68rem', padding: '6px 12px' }}
+                >
+                  [ &lt; PREV ]
+                </button>
+                <button
+                  onClick={handleNextProject}
+                  className="btn-capsule btn-cyan"
+                  style={{ flex: 1, justifyContent: 'center', fontSize: '0.68rem', padding: '6px 12px' }}
+                >
+                  [ NEXT &gt; ]
+                </button>
+              </div>
+            )}
             
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#ffffff', letterSpacing: '0.05em' }}>
-                DIRECT PROJECT LINKS:
+            <div style={{ borderTop: '1px solid rgba(0, 240, 255, 0.1)', margin: '4px 0' }} />
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <span style={{ fontSize: '0.62rem', fontWeight: 700, color: '#ffffff', letterSpacing: '0.05em' }}>
+                DIRECT LINKS:
               </span>
               
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {/* GrowIQ Link */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <a 
                   href="https://growiq-ai.netlify.app" 
                   target="_blank" 
@@ -518,29 +493,19 @@ export function InterfaceOverlay({
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     background: 'rgba(0, 240, 255, 0.05)',
-                    border: '1px solid rgba(0, 240, 255, 0.15)',
-                    padding: '8px 12px',
+                    border: '1px solid rgba(0, 240, 255, 0.12)',
+                    padding: '6px 10px',
                     borderRadius: '6px',
                     color: '#ffffff',
                     textDecoration: 'none',
-                    fontSize: '0.72rem',
-                    fontWeight: 600,
-                    transition: 'var(--transition-smooth)'
-                  }}
-                  onMouseOver={(e) => {
-                    e.currentTarget.style.background = 'rgba(0, 240, 255, 0.12)';
-                    e.currentTarget.style.borderColor = 'var(--accent-cyan)';
-                  }}
-                  onMouseOut={(e) => {
-                    e.currentTarget.style.background = 'rgba(0, 240, 255, 0.05)';
-                    e.currentTarget.style.borderColor = 'rgba(0, 240, 255, 0.15)';
+                    fontSize: '0.68rem',
+                    fontWeight: 600
                   }}
                 >
-                  <span>GrowIQ - AI Growth Tool</span>
-                  <span style={{ color: 'var(--accent-cyan)', fontSize: '0.65rem' }}>VISIT SITE →</span>
+                  <span>GrowIQ Platform</span>
+                  <span style={{ color: 'var(--accent-cyan)', fontSize: '0.62rem' }}>VISIT →</span>
                 </a>
 
-                {/* DukaanIQ Link */}
                 <a 
                   href="https://dukaaniq-retail.netlify.app" 
                   target="_blank" 
@@ -550,86 +515,73 @@ export function InterfaceOverlay({
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     background: 'rgba(255, 215, 0, 0.04)',
-                    border: '1px solid rgba(255, 215, 0, 0.15)',
-                    padding: '8px 12px',
+                    border: '1px solid rgba(255, 215, 0, 0.12)',
+                    padding: '6px 10px',
                     borderRadius: '6px',
                     color: '#ffffff',
                     textDecoration: 'none',
-                    fontSize: '0.72rem',
-                    fontWeight: 600,
-                    transition: 'var(--transition-smooth)'
-                  }}
-                  onMouseOver={(e) => {
-                    e.currentTarget.style.background = 'rgba(255, 215, 0, 0.1)';
-                    e.currentTarget.style.borderColor = 'var(--accent-gold)';
-                  }}
-                  onMouseOut={(e) => {
-                    e.currentTarget.style.background = 'rgba(255, 215, 0, 0.04)';
-                    e.currentTarget.style.borderColor = 'rgba(255, 215, 0, 0.15)';
+                    fontSize: '0.68rem',
+                    fontWeight: 600
                   }}
                 >
-                  <span>DukaanIQ - ERP Retail Ledger</span>
-                  <span style={{ color: 'var(--accent-gold)', fontSize: '0.65rem' }}>VISIT SITE →</span>
+                  <span>DukaanIQ Retail ERP</span>
+                  <span style={{ color: 'var(--accent-gold)', fontSize: '0.62rem' }}>VISIT →</span>
                 </a>
               </div>
             </div>
           </div>
         )}
 
+        {/* Zone 4 Info Overlay */}
         {activeZone === 'neev' && (
           <div
             className="hud-interactive glass-panel-cyan"
             style={{
-              padding: '16px 24px',
+              padding: isMobile ? '12px 16px' : '16px 24px',
               pointerEvents: 'auto',
-              marginLeft: 'auto',
+              marginLeft: isMobile ? '0' : 'auto',
               marginTop: 'auto',
-              maxWidth: '350px',
+              width: isMobile ? '100%' : '350px',
               display: 'flex',
               flexDirection: 'column',
-              gap: '8px'
+              gap: '6px'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Info className="text-cyan pulse-text" size={16} />
-              <span style={{ fontSize: '0.8rem', fontWeight: 600, fontFamily: 'var(--font-heading)' }}>
+              <Info className="text-cyan pulse-text" size={14} />
+              <span style={{ fontSize: isMobile ? '0.75rem' : '0.8rem', fontWeight: 600, fontFamily: 'var(--font-heading)' }}>
                 ZONE 4: THE NEEV SHOWCASE
               </span>
             </div>
-            <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-              Massive, borderless interactive theater console. 
-            </p>
-            <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-              The video walkthrough is perfectly centered and flat. Use the drift controls below the console to Play, Pause, or Unmute, and click <strong>[ VISIT LIVE SITE ]</strong> to explore the live application.
+            <p style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+              Theater console. Use Play/Pause/Mute below the screen mesh or click [ VISIT LIVE SITE ].
             </p>
           </div>
         )}
 
+        {/* Zone 5 Info Overlay */}
         {activeZone === 'portal' && (
           <div
             className="hud-interactive glass-panel-cyan"
             style={{
-              padding: '16px 24px',
+              padding: isMobile ? '12px 16px' : '16px 24px',
               pointerEvents: 'auto',
-              marginLeft: 'auto',
+              marginLeft: isMobile ? '0' : 'auto',
               marginTop: 'auto',
-              maxWidth: '350px',
+              width: isMobile ? '100%' : '350px',
               display: 'flex',
               flexDirection: 'column',
-              gap: '8px'
+              gap: '6px'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Info className="text-cyan pulse-text" size={16} />
-              <span style={{ fontSize: '0.8rem', fontWeight: 600, fontFamily: 'var(--font-heading)' }}>
+              <Info className="text-cyan pulse-text" size={14} />
+              <span style={{ fontSize: isMobile ? '0.75rem' : '0.8rem', fontWeight: 600, fontFamily: 'var(--font-heading)' }}>
                 ZONE 5: THE PORTAL
               </span>
             </div>
-            <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-              Secure communication terminal and skills index. 
-            </p>
-            <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-              Your technical skills are organized in a neat flat frame, and AI platforms orbit in a halo ring behind. Fill out the console fields to transmit a secure message directly to Divesh.
+            <p style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+              Secure transmission terminal and technical skills matrix. Fill out the holographic console to send a secure message.
             </p>
           </div>
         )}
@@ -637,6 +589,7 @@ export function InterfaceOverlay({
       </div>
 
       {/* ================= BOTTOM BAR: NAVIGATION ================= */}
+      {/* Shortens names on mobile to [01], [02], etc. to prevent overflow */}
       <div 
         className="hud-interactive" 
         style={{ display: 'flex', justifyContent: 'center', width: '100%', marginTop: 'auto', zIndex: 100 }}
@@ -646,14 +599,16 @@ export function InterfaceOverlay({
         <div 
           className="glass-panel nav-bar" 
           style={{ 
-            gap: '8px', 
-            padding: '8px 16px',
+            gap: isMobile ? '6px' : '8px', 
+            padding: isMobile ? '6px 12px' : '8px 16px',
             background: 'rgba(8, 12, 22, 0.85)',
             borderColor: 'rgba(0, 240, 255, 0.3)',
             boxShadow: '0 0 20px rgba(0, 240, 255, 0.15)',
             borderWidth: '1.5px',
             display: 'flex',
-            alignItems: 'center'
+            alignItems: 'center',
+            width: isMobile ? '100%' : 'auto',
+            justifyContent: 'space-around'
           }}
         >
           
@@ -662,123 +617,149 @@ export function InterfaceOverlay({
             onClick={() => {
               setActiveZone('identity');
               setActiveNode(null);
+              if (isMobile) window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             className={`nav-item ${activeZone === 'identity' ? 'active-cyan' : ''}`}
             style={{ 
               display: 'flex', 
               alignItems: 'center', 
-              gap: '8px', 
+              gap: '6px', 
               border: 'none', 
               background: 'none',
               color: activeZone === 'identity' ? 'var(--accent-cyan)' : '#a0a0ab',
-              fontWeight: 600
+              fontWeight: 600,
+              fontSize: isMobile ? '0.72rem' : '0.8rem'
             }}
           >
-            <User size={13} />
-            <span>[01 NEXUS]</span>
+            <User size={12} />
+            <span>{isMobile ? '[01]' : '[01 NEXUS]'}</span>
           </button>
 
           {/* Separator */}
-          <span style={{ color: 'rgba(255, 255, 255, 0.12)', margin: '0 4px', userSelect: 'none' }}>-----</span>
+          {!isMobile && <span style={{ color: 'rgba(255, 255, 255, 0.12)', margin: '0 4px', userSelect: 'none' }}>-----</span>}
 
           {/* TAB 2: EXPERIENCE */}
           <button
             onClick={() => {
               setActiveZone('experience');
+              if (isMobile) {
+                const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
+                window.scrollTo({ top: totalHeight * 0.28, behavior: 'smooth' });
+              }
             }}
             className={`nav-item ${activeZone === 'experience' ? 'active-gold' : ''}`}
             style={{ 
               display: 'flex', 
               alignItems: 'center', 
-              gap: '8px', 
+              gap: '6px', 
               border: 'none', 
               background: 'none',
               color: activeZone === 'experience' ? 'var(--accent-gold)' : '#a0a0ab',
-              fontWeight: 600
+              fontWeight: 600,
+              fontSize: isMobile ? '0.72rem' : '0.8rem'
             }}
           >
-            <Briefcase size={13} />
-            <span>[02 EXPERIENCE]</span>
+            <Briefcase size={12} />
+            <span>{isMobile ? '[02]' : '[02 EXPERIENCE]'}</span>
           </button>
 
           {/* Separator */}
-          <span style={{ color: 'rgba(255, 255, 255, 0.12)', margin: '0 4px', userSelect: 'none' }}>-----</span>
+          {!isMobile && <span style={{ color: 'rgba(255, 255, 255, 0.12)', margin: '0 4px', userSelect: 'none' }}>-----</span>}
 
           {/* TAB 3: VAULT */}
           <button
             onClick={() => {
               setActiveZone('projects');
               setActiveNode(null);
+              if (isMobile) {
+                const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
+                window.scrollTo({ top: totalHeight * 0.52, behavior: 'smooth' });
+              }
             }}
             className={`nav-item ${activeZone === 'projects' ? 'active-cyan' : ''}`}
             style={{ 
               display: 'flex', 
               alignItems: 'center', 
-              gap: '8px', 
+              gap: '6px', 
               border: 'none', 
               background: 'none',
               color: activeZone === 'projects' ? 'var(--accent-cyan)' : '#a0a0ab',
-              fontWeight: 600
+              fontWeight: 600,
+              fontSize: isMobile ? '0.72rem' : '0.8rem'
             }}
           >
-            <Database size={13} />
-            <span>[03 VAULT]</span>
+            <Database size={12} />
+            <span>{isMobile ? '[03]' : '[03 VAULT]'}</span>
           </button>
 
           {/* Separator */}
-          <span style={{ color: 'rgba(255, 255, 255, 0.12)', margin: '0 4px', userSelect: 'none' }}>-----</span>
+          {!isMobile && <span style={{ color: 'rgba(255, 255, 255, 0.12)', margin: '0 4px', userSelect: 'none' }}>-----</span>}
 
           {/* TAB 4: SHOWCASE */}
           <button
             onClick={() => {
               setActiveZone('neev');
               setActiveNode(null);
+              if (isMobile) {
+                const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
+                window.scrollTo({ top: totalHeight * 0.76, behavior: 'smooth' });
+              }
             }}
             className={`nav-item ${activeZone === 'neev' ? 'active-cyan' : ''}`}
             style={{ 
               display: 'flex', 
               alignItems: 'center', 
-              gap: '8px', 
+              gap: '6px', 
               border: 'none', 
               background: 'none',
               color: activeZone === 'neev' ? 'var(--accent-cyan)' : '#a0a0ab',
-              fontWeight: 600
+              fontWeight: 600,
+              fontSize: isMobile ? '0.72rem' : '0.8rem'
             }}
           >
-            <MonitorPlay size={13} />
-            <span>[04 SHOWCASE]</span>
+            <MonitorPlay size={12} />
+            <span>{isMobile ? '[04]' : '[04 SHOWCASE]'}</span>
           </button>
 
           {/* Separator */}
-          <span style={{ color: 'rgba(255, 255, 255, 0.12)', margin: '0 4px', userSelect: 'none' }}>-----</span>
+          {!isMobile && <span style={{ color: 'rgba(255, 255, 255, 0.12)', margin: '0 4px', userSelect: 'none' }}>-----</span>}
 
           {/* TAB 5: TRANSMISSION */}
           <button
             onClick={() => {
               setActiveZone('portal');
               setActiveNode(null);
+              if (isMobile) {
+                const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
+                window.scrollTo({ top: totalHeight, behavior: 'smooth' });
+              }
             }}
             className={`nav-item ${activeZone === 'portal' ? 'active-cyan' : ''}`}
             style={{ 
               display: 'flex', 
               alignItems: 'center', 
-              gap: '8px', 
+              gap: '6px', 
               border: 'none', 
               background: 'none',
               color: activeZone === 'portal' ? 'var(--accent-cyan)' : '#a0a0ab',
-              fontWeight: 600
+              fontWeight: 600,
+              fontSize: isMobile ? '0.72rem' : '0.8rem'
             }}
           >
-            <Cpu size={13} />
-            <span>[05 TRANSMISSION]</span>
+            <Cpu size={12} />
+            <span>{isMobile ? '[05]' : '[05 TRANSMISSION]'}</span>
           </button>
 
         </div>
       </div>
 
-      {/* Hardware-Accelerated Immersive Custom Cursor */}
-      <div ref={cursorDotRef} className="custom-cursor-dot" />
-      <div ref={cursorRingRef} className="custom-cursor-ring" />
+      {/* Hardware-Accelerated Immersive Custom Cursor (Only renders on Desktop) */}
+      {!isMobile && (
+        <>
+          <div ref={cursorDotRef} className="custom-cursor-dot" />
+          <div ref={cursorRingRef} className="custom-cursor-ring" />
+        </>
+      )}
 
     </div>
   );

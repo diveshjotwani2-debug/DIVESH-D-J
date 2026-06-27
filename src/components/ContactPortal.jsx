@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 
-export function ContactPortal({ isActive }) {
+export function ContactPortal({ isActive, isMobile }) {
   const portalRef = useRef();
 
   // Form states
@@ -33,13 +33,13 @@ export function ContactPortal({ isActive }) {
     const time = state.clock.getElapsedTime();
 
     if (portalRef.current && isActive) {
-      // Mild, extremely subtle floating drift (slower and smaller amplitude)
-      portalRef.current.position.y = -20 + Math.sin(time * 0.4) * 0.03;
+      // Mild, extremely subtle floating drift at Y = -23 (mobile) or Y = -20 (desktop)
+      portalRef.current.position.y = (isMobile ? -23.0 : -20.0) + Math.sin(time * 0.4) * 0.03;
     }
   });
 
   return (
-    <group ref={portalRef} position={[0, -20, 0]}>
+    <group ref={portalRef} position={[0, isMobile ? -23.0 : -20.0, 0]} scale={isMobile ? 0.75 : 1.0}>
       {/* Dynamic Ambient Point Light locally lighting the portal zone */}
       <pointLight position={[0, 1.5, 2]} intensity={1.2} distance={8} color="#00f0ff" />
       <pointLight position={[0, -1.5, 2]} intensity={0.8} distance={8} color="#ffd700" />
@@ -47,7 +47,7 @@ export function ContactPortal({ isActive }) {
       {/* Unified Holographic Control Dashboard Console */}
       <Html
         transform
-        distanceFactor={10.0}
+        distanceFactor={isMobile ? 6.8 : 10.0} // Pull closer on mobile to keep text razor sharp
         position={[0, 0, 0]}
         style={{ pointerEvents: 'auto' }}
         onWheel={(e) => e.stopPropagation()}
@@ -57,10 +57,11 @@ export function ContactPortal({ isActive }) {
           className="dashboard-container"
           style={{
             display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row', // Stack vertically on mobile
             gap: '16px',
             alignItems: 'stretch',
-            width: '830px',
-            maxWidth: '100vw',
+            width: isMobile ? '380px' : '830px', // Shrink dashboard width on mobile
+            maxWidth: '95vw',
             boxSizing: 'border-box',
             justifyContent: 'center',
             fontFamily: 'var(--font-body)',
