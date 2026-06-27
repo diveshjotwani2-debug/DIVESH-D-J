@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, Suspense } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
-import { supabase } from './supabaseClient';
+import { supabase, isOfflineMode } from './supabaseClient';
 
 // Import 3D Components
 import { Lighting } from './components/Lighting';
@@ -205,14 +205,29 @@ export default function App() {
 
   // 2. Mobile scroll listener: maps document scroll position directly to camera heights
   useEffect(() => {
+    const rootDiv = document.getElementById('root');
+
     if (!isMobile) {
+      document.documentElement.style.overflowY = 'hidden';
+      document.documentElement.style.height = '100%';
       document.body.style.overflowY = 'hidden';
-      document.body.style.height = 'auto';
+      document.body.style.height = '100%';
+      if (rootDiv) {
+        rootDiv.style.overflowY = 'hidden';
+        rootDiv.style.height = '100%';
+      }
       return;
     }
 
+    // Fully unlock mobile browser scroll path
+    document.documentElement.style.overflowY = 'scroll';
+    document.documentElement.style.height = 'auto';
     document.body.style.overflowY = 'scroll';
     document.body.style.height = '500vh'; // 5 pages of scrollable depth
+    if (rootDiv) {
+      rootDiv.style.overflowY = 'visible';
+      rootDiv.style.height = 'auto';
+    }
 
     const handleScroll = () => {
       const scrollTop = window.scrollY;
@@ -239,8 +254,14 @@ export default function App() {
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
-      document.body.style.overflowY = 'auto';
-      document.body.style.height = 'auto';
+      document.documentElement.style.overflowY = '';
+      document.documentElement.style.height = '';
+      document.body.style.overflowY = '';
+      document.body.style.height = '';
+      if (rootDiv) {
+        rootDiv.style.overflowY = '';
+        rootDiv.style.height = '';
+      }
     };
   }, [isMobile]);
 
@@ -252,26 +273,48 @@ export default function App() {
     window.addEventListener('hashchange', handleLocationChange);
     window.addEventListener('popstate', handleLocationChange);
 
+    if (isOfflineMode) {
+      setSession(null);
+      setAuthChecked(true);
+      return () => {
+        window.removeEventListener('hashchange', handleLocationChange);
+        window.removeEventListener('popstate', handleLocationChange);
+      };
+    }
+
     // Initial check of Auth Session
+    let subscription = null;
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       setSession(currentSession);
+      setAuthChecked(true);
+    }).catch(err => {
+      console.warn("Auth check failed:", err);
+      setSession(null);
       setAuthChecked(true);
     });
 
     // Listen to Auth State changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const { data } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession);
     });
+    subscription = data?.subscription;
 
     return () => {
       window.removeEventListener('hashchange', handleLocationChange);
       window.removeEventListener('popstate', handleLocationChange);
-      subscription.unsubscribe();
+      if (subscription) subscription.unsubscribe();
     };
   }, []);
 
   // 4. Fetch live data from Supabase Core
   useEffect(() => {
+    if (isOfflineMode) {
+      setExperiences(fallbackExperiences);
+      setProjects(fallbackProjects);
+      setLoadingDb(false);
+      return;
+    }
+
     const loadCoreData = async () => {
       try {
         // Fetch experiences

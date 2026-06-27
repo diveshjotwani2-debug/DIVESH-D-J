@@ -3,10 +3,19 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-if (!supabaseUrl || !supabaseAnonKey) {
+// Detect if credentials are empty, placeholders, or missing
+export const isOfflineMode = !supabaseUrl || 
+                             !supabaseAnonKey || 
+                             supabaseUrl.includes('placeholder') || 
+                             supabaseUrl.includes('PASTE_YOUR_') ||
+                             supabaseAnonKey.includes('placeholder');
+
+if (isOfflineMode) {
   console.warn(
-    'Supabase environment variables are missing. The portfolio will run in offline/static fallback mode.'
+    'Supabase credentials missing or invalid. Cockpit operating in secure offline fallback mode.'
   );
 }
 
-export const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseAnonKey || 'placeholder');
+export const supabase = isOfflineMode 
+  ? null 
+  : createClient(supabaseUrl, supabaseAnonKey);
