@@ -410,7 +410,8 @@ export function InterfaceOverlay({
 
         {/* BOTTOM RIGHT CORNER HINTS */}
         {activeZone === 'projects' && (() => {
-          const activeProjData = projectsData?.find(p => p.id === activeProject);
+          const currentProject = activeProject || 'growiq';
+          const activeProjData = projectsData?.find(p => p.id === currentProject) || projectsData?.[0];
 
           return (
             <div
@@ -429,26 +430,59 @@ export function InterfaceOverlay({
               onWheel={(e) => e.stopPropagation()}
               onPointerDown={(e) => e.stopPropagation()}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: activeProjData ? '1px solid rgba(0, 240, 255, 0.15)' : 'none', paddingBottom: activeProjData ? '6px' : '0' }}>
-                <Info className="text-cyan pulse-text" size={14} />
-                <span style={{ fontSize: isMobile ? '0.75rem' : '0.8rem', fontWeight: 600, fontFamily: 'var(--font-heading)' }}>
-                  {activeProjData ? `${activeProjData.title.toUpperCase()}` : 'ZONE 3: THE PROJECT VAULT'}
-                </span>
+              {/* Project Quick Switcher Tabs */}
+              <div style={{ display: 'flex', gap: '8px', width: '100%', marginBottom: '4px' }}>
+                <button
+                  onClick={() => setActiveProject('growiq')}
+                  className={`btn-capsule ${currentProject === 'growiq' ? 'btn-cyan' : ''}`}
+                  style={{ 
+                    flex: 1, 
+                    justifyContent: 'center', 
+                    fontSize: '0.68rem', 
+                    padding: '6px 12px',
+                    borderColor: currentProject === 'growiq' ? 'var(--accent-cyan)' : 'rgba(0, 240, 255, 0.15)',
+                    background: currentProject === 'growiq' ? 'rgba(0, 240, 255, 0.12)' : 'rgba(5, 7, 12, 0.4)'
+                  }}
+                >
+                  GROWIQ SPECS
+                </button>
+                <button
+                  onClick={() => setActiveProject('dukaaniq')}
+                  className={`btn-capsule ${currentProject === 'dukaaniq' ? 'btn-gold' : ''}`}
+                  style={{ 
+                    flex: 1, 
+                    justifyContent: 'center', 
+                    fontSize: '0.68rem', 
+                    padding: '6px 12px',
+                    borderColor: currentProject === 'dukaaniq' ? 'var(--accent-gold)' : 'rgba(255, 215, 0, 0.15)',
+                    background: currentProject === 'dukaaniq' ? 'rgba(255, 215, 0, 0.1)' : 'rgba(5, 7, 12, 0.4)'
+                  }}
+                >
+                  DUKAANIQ SPECS
+                </button>
               </div>
-              
-              {activeProjData ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: isMobile ? '0.72rem' : '0.76rem', color: 'var(--text-secondary)' }}>
-                  <p style={{ color: 'var(--accent-cyan)', fontWeight: 600, fontSize: '0.65rem' }}>
-                    {activeProjData.tagline} • {activeProjData.year}
+
+              {activeProjData && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: isMobile ? '0.72rem' : '0.76rem', color: 'var(--text-secondary)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#ffffff', fontFamily: 'var(--font-heading)' }}>
+                      {activeProjData.title.toUpperCase()}
+                    </span>
+                    <span style={{ fontSize: '0.62rem', color: activeProjData.color, fontWeight: 600 }}>
+                      {activeProjData.year}
+                    </span>
+                  </div>
+                  <p style={{ color: activeProjData.color, fontWeight: 600, fontSize: '0.65rem', marginTop: '-2px' }}>
+                    {activeProjData.tagline}
                   </p>
-                  <p style={{ lineHeight: '1.4' }}>
+                  <p style={{ lineHeight: '1.35', fontSize: '0.7rem' }}>
                     {activeProjData.backDetails.desc}
                   </p>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', margin: '4px 0', padding: '8px', background: 'rgba(0, 240, 255, 0.04)', border: '1px solid rgba(0, 240, 255, 0.1)', borderRadius: '6px' }}>
-                    <div style={{ color: '#ffffff', fontWeight: 700, fontSize: '0.62rem', letterSpacing: '0.05em' }}>KEY SPECIFICATIONS:</div>
-                    <div style={{ fontSize: '0.68rem' }}>{activeProjData.backDetails.bullet1}</div>
-                    <div style={{ fontSize: '0.68rem' }}>{activeProjData.backDetails.bullet2}</div>
-                    <div style={{ fontSize: '0.68rem' }}>{activeProjData.backDetails.bullet3}</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', margin: '2px 0', padding: '6px 8px', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: '6px' }}>
+                    <div style={{ color: '#ffffff', fontWeight: 700, fontSize: '0.6rem', letterSpacing: '0.05em', marginBottom: '2px' }}>KEY SPECIFICATIONS:</div>
+                    <div style={{ fontSize: '0.65rem' }}>{activeProjData.backDetails.bullet1}</div>
+                    <div style={{ fontSize: '0.65rem' }}>{activeProjData.backDetails.bullet2}</div>
+                    <div style={{ fontSize: '0.65rem' }}>{activeProjData.backDetails.bullet3}</div>
                   </div>
                   <p style={{ fontSize: '0.65rem', lineHeight: '1.3' }}>
                     <strong style={{ color: '#fff' }}>TECH DECK:</strong> {activeProjData.backDetails.skills}
@@ -458,7 +492,7 @@ export function InterfaceOverlay({
                     href={activeProjData.demoUrl} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="btn-capsule btn-cyan glow-hover-cyan"
+                    className="btn-capsule glow-hover-cyan"
                     style={{
                       textDecoration: 'none',
                       justifyContent: 'center',
@@ -467,30 +501,23 @@ export function InterfaceOverlay({
                       fontWeight: 700,
                       marginTop: '4px',
                       display: 'flex',
-                      alignItems: 'center'
+                      alignItems: 'center',
+                      background: 'rgba(255, 255, 255, 0.04)',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
+                      color: '#ffffff'
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.background = activeProjData.color;
+                      e.currentTarget.style.color = '#030305';
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
+                      e.currentTarget.style.color = '#ffffff';
                     }}
                   >
                     <span>VISIT LIVE DEMO SITE</span>
                   </a>
                 </div>
-              ) : (
-                <>
-                  <p style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-                    Click a card to reveal its technical specifications and visit the live website.
-                  </p>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '6px' }}>
-                    {projectsData.map((proj) => (
-                      <button
-                        key={proj.id}
-                        onClick={() => setActiveProject(proj.id)}
-                        className="btn-capsule btn-cyan glow-hover-cyan"
-                        style={{ justifyContent: 'center', fontSize: '0.68rem', padding: '6px' }}
-                      >
-                        [ VIEW {proj.title.toUpperCase()} SPECS ]
-                      </button>
-                    ))}
-                  </div>
-                </>
               )}
             </div>
           );
