@@ -409,86 +409,92 @@ export function InterfaceOverlay({
         </div>
 
         {/* BOTTOM RIGHT CORNER HINTS */}
-        {activeZone === 'projects' && (
-          <div
-            className="hud-interactive glass-panel-cyan"
-            style={{
-              padding: isMobile ? '16px' : '16px 24px',
-              pointerEvents: 'auto',
-              marginLeft: isMobile ? '0' : 'auto',
-              marginTop: 'auto',
-              width: isMobile ? '100%' : '350px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '6px'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Info className="text-cyan pulse-text" size={14} />
-              <span style={{ fontSize: isMobile ? '0.75rem' : '0.8rem', fontWeight: 600, fontFamily: 'var(--font-heading)' }}>
-                ZONE 3: THE PROJECT VAULT
-              </span>
-            </div>
-            
-            <p style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-              Click card to flip. Click [ VISIT LIVE SITE ] to open demo.
-            </p>
-            
-            <div style={{ borderTop: '1px solid rgba(0, 240, 255, 0.1)', margin: '4px 0' }} />
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <span style={{ fontSize: '0.62rem', fontWeight: 700, color: '#ffffff', letterSpacing: '0.05em' }}>
-                DIRECT LINKS:
-              </span>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <a 
-                  href="https://growiq-ai.netlify.app" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    background: 'rgba(0, 240, 255, 0.05)',
-                    border: '1px solid rgba(0, 240, 255, 0.12)',
-                    padding: '6px 10px',
-                    borderRadius: '6px',
-                    color: '#ffffff',
-                    textDecoration: 'none',
-                    fontSize: '0.68rem',
-                    fontWeight: 600
-                  }}
-                >
-                  <span>GrowIQ Platform</span>
-                  <span style={{ color: 'var(--accent-cyan)', fontSize: '0.62rem' }}>VISIT →</span>
-                </a>
+        {activeZone === 'projects' && (() => {
+          const activeProjData = projectsData?.find(p => p.id === activeProject);
 
-                <a 
-                  href="https://dukaaniq-retail.netlify.app" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    background: 'rgba(255, 215, 0, 0.04)',
-                    border: '1px solid rgba(255, 215, 0, 0.12)',
-                    padding: '6px 10px',
-                    borderRadius: '6px',
-                    color: '#ffffff',
-                    textDecoration: 'none',
-                    fontSize: '0.68rem',
-                    fontWeight: 600
-                  }}
-                >
-                  <span>DukaanIQ Retail ERP</span>
-                  <span style={{ color: 'var(--accent-gold)', fontSize: '0.62rem' }}>VISIT →</span>
-                </a>
+          return (
+            <div
+              className="hud-interactive glass-panel-cyan"
+              style={{
+                padding: isMobile ? '16px' : '16px 24px',
+                pointerEvents: 'auto',
+                marginLeft: isMobile ? '0' : 'auto',
+                marginTop: 'auto',
+                width: isMobile ? 'calc(100vw - 32px)' : '350px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+                boxShadow: '0 20px 40px rgba(0, 240, 255, 0.12)'
+              }}
+              onWheel={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: activeProjData ? '1px solid rgba(0, 240, 255, 0.15)' : 'none', paddingBottom: activeProjData ? '6px' : '0' }}>
+                <Info className="text-cyan pulse-text" size={14} />
+                <span style={{ fontSize: isMobile ? '0.75rem' : '0.8rem', fontWeight: 600, fontFamily: 'var(--font-heading)' }}>
+                  {activeProjData ? `${activeProjData.title.toUpperCase()}` : 'ZONE 3: THE PROJECT VAULT'}
+                </span>
               </div>
+              
+              {activeProjData ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: isMobile ? '0.72rem' : '0.76rem', color: 'var(--text-secondary)' }}>
+                  <p style={{ color: 'var(--accent-cyan)', fontWeight: 600, fontSize: '0.65rem' }}>
+                    {activeProjData.tagline} • {activeProjData.year}
+                  </p>
+                  <p style={{ lineHeight: '1.4' }}>
+                    {activeProjData.backDetails.desc}
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', margin: '4px 0', padding: '8px', background: 'rgba(0, 240, 255, 0.04)', border: '1px solid rgba(0, 240, 255, 0.1)', borderRadius: '6px' }}>
+                    <div style={{ color: '#ffffff', fontWeight: 700, fontSize: '0.62rem', letterSpacing: '0.05em' }}>KEY SPECIFICATIONS:</div>
+                    <div style={{ fontSize: '0.68rem' }}>{activeProjData.backDetails.bullet1}</div>
+                    <div style={{ fontSize: '0.68rem' }}>{activeProjData.backDetails.bullet2}</div>
+                    <div style={{ fontSize: '0.68rem' }}>{activeProjData.backDetails.bullet3}</div>
+                  </div>
+                  <p style={{ fontSize: '0.65rem', lineHeight: '1.3' }}>
+                    <strong style={{ color: '#fff' }}>TECH DECK:</strong> {activeProjData.backDetails.skills}
+                  </p>
+                  
+                  <a 
+                    href={activeProjData.demoUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="btn-capsule btn-cyan glow-hover-cyan"
+                    style={{
+                      textDecoration: 'none',
+                      justifyContent: 'center',
+                      padding: '8px',
+                      fontSize: '0.68rem',
+                      fontWeight: 700,
+                      marginTop: '4px',
+                      display: 'flex',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <span>VISIT LIVE DEMO SITE</span>
+                  </a>
+                </div>
+              ) : (
+                <>
+                  <p style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+                    Click a card to reveal its technical specifications and visit the live website.
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '6px' }}>
+                    {projectsData.map((proj) => (
+                      <button
+                        key={proj.id}
+                        onClick={() => setActiveProject(proj.id)}
+                        className="btn-capsule btn-cyan glow-hover-cyan"
+                        style={{ justifyContent: 'center', fontSize: '0.68rem', padding: '6px' }}
+                      >
+                        [ VIEW {proj.title.toUpperCase()} SPECS ]
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Zone 4 Info Overlay */}
         {activeZone === 'neev' && !isMobile && (
