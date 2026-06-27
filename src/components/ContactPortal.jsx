@@ -45,14 +45,15 @@ export function ContactPortal({ isActive, isMobile }) {
       <pointLight position={[0, -1.5, 2]} intensity={0.8} distance={8} color="#ffd700" />
 
       {/* Unified Holographic Control Dashboard Console */}
-      <Html
-        transform
-        distanceFactor={10.0}
-        position={[0, 0, 0]}
-        style={{ pointerEvents: 'auto' }}
-        onWheel={(e) => e.stopPropagation()}
-        onPointerDown={(e) => e.stopPropagation()}
-      >
+      {isActive && (
+        <Html
+          transform
+          distanceFactor={10.0}
+          position={[0, 0, 0]}
+          style={{ pointerEvents: 'auto' }}
+          onWheel={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
         <div 
           className="dashboard-container"
           style={{
@@ -442,9 +443,9 @@ export function ContactPortal({ isActive, isMobile }) {
               </div>
             </div>
           </div>
-
         </div>
-      </Html>
+        </Html>
+      )}
     </group>
   );
 }

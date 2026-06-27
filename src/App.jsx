@@ -123,9 +123,9 @@ function CameraController({ activeZone, resetTrigger, controlsRef, isMobile }) {
         targetFov.current = fovVal;
         break;
       case 'projects':
-        targetPos.current.set(0, -6, 5.5 * zOffset);
+        targetPos.current.set(0, -6, isMobile ? 10.2 : 5.5);
         targetLookAt.current.set(0, -6, 0);
-        targetFov.current = fovVal;
+        targetFov.current = isMobile ? 72 : 45;
         break;
       case 'neev':
         targetPos.current.set(0, -12.5, 6.8 * zOffset);

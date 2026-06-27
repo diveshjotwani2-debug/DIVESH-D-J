@@ -491,7 +491,7 @@ export function InterfaceOverlay({
         )}
 
         {/* Zone 4 Info Overlay */}
-        {activeZone === 'neev' && (
+        {activeZone === 'neev' && !isMobile && (
           <div
             className="hud-interactive glass-panel-cyan"
             style={{
@@ -550,14 +550,21 @@ export function InterfaceOverlay({
       {/* Shortens names on mobile to [01], [02], etc. to prevent overflow */}
       <div 
         className="hud-interactive" 
-        style={{ display: 'flex', justifyContent: 'center', width: '100%', marginTop: 'auto', zIndex: 100 }}
+        style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          width: '100%', 
+          marginTop: 'auto', 
+          zIndex: 100,
+          paddingBottom: isMobile ? '8px' : '0'
+        }}
         onWheel={(e) => e.stopPropagation()}
         onPointerDown={(e) => e.stopPropagation()}
       >
         <div 
           className="glass-panel nav-bar" 
           style={{ 
-            gap: isMobile ? '6px' : '8px', 
+            gap: isMobile ? '8px' : '8px', 
             padding: isMobile ? '6px 12px' : '8px 16px',
             background: 'rgba(8, 12, 22, 0.85)',
             borderColor: 'rgba(0, 240, 255, 0.3)',
@@ -565,8 +572,8 @@ export function InterfaceOverlay({
             borderWidth: '1.5px',
             display: 'flex',
             alignItems: 'center',
-            width: isMobile ? '100%' : 'auto',
-            justifyContent: 'space-around'
+            justifyContent: 'center',
+            width: isMobile ? 'calc(100vw - 32px)' : 'auto'
           }}
         >
           
@@ -588,7 +595,7 @@ export function InterfaceOverlay({
               fontSize: isMobile ? '0.72rem' : '0.8rem'
             }}
           >
-            <User size={12} />
+            {!isMobile && <User size={12} />}
             <span>{isMobile ? '[01]' : '[01 NEXUS]'}</span>
           </button>
 
@@ -612,7 +619,7 @@ export function InterfaceOverlay({
               fontSize: isMobile ? '0.72rem' : '0.8rem'
             }}
           >
-            <Briefcase size={12} />
+            {!isMobile && <Briefcase size={12} />}
             <span>{isMobile ? '[02]' : '[02 EXPERIENCE]'}</span>
           </button>
 
@@ -637,7 +644,7 @@ export function InterfaceOverlay({
               fontSize: isMobile ? '0.72rem' : '0.8rem'
             }}
           >
-            <Database size={12} />
+            {!isMobile && <Database size={12} />}
             <span>{isMobile ? '[03]' : '[03 VAULT]'}</span>
           </button>
 
@@ -662,7 +669,7 @@ export function InterfaceOverlay({
               fontSize: isMobile ? '0.72rem' : '0.8rem'
             }}
           >
-            <MonitorPlay size={12} />
+            {!isMobile && <MonitorPlay size={12} />}
             <span>{isMobile ? '[04]' : '[04 SHOWCASE]'}</span>
           </button>
 
@@ -687,7 +694,7 @@ export function InterfaceOverlay({
               fontSize: isMobile ? '0.72rem' : '0.8rem'
             }}
           >
-            <Cpu size={12} />
+            {!isMobile && <Cpu size={12} />}
             <span>{isMobile ? '[05]' : '[05 TRANSMISSION]'}</span>
           </button>
 
