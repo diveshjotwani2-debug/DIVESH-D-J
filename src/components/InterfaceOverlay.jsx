@@ -199,7 +199,7 @@ export function InterfaceOverlay({
             </div>
 
             <a
-              href="/assets/DIVESH_DHIRAJ_JOTWANI_RESUME.pdf"
+              href="./assets/DIVESH_DHIRAJ_JOTWANI_RESUME.pdf"
               download="Divesh_Dhiraj_Jotwani_Resume.pdf"
               className="btn-capsule btn-cyan glow-hover-cyan"
               style={{

@@ -14,7 +14,7 @@ export function NeevVideoConsole({ activeZone }) {
   // 1. Create a hidden HTML5 video element
   const [video] = useState(() => {
     const vid = document.createElement("video");
-    vid.src = "/assets/neev-walkthrough.mp4"; // Walkthrough video file
+    vid.src = "./assets/neev-walkthrough.mp4"; // Walkthrough video file
     vid.crossOrigin = "Anonymous";
     vid.loop = true;
     vid.muted = true; // Required for autoplay in browsers
